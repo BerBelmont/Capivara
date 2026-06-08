@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ImageBackground,
   Pressable,
@@ -16,6 +16,7 @@ import { StatusBar } from "../components/StatusBar";
 import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
 import { CapybaraStatus, RootStackParamList, RoomName } from "../types/game";
 import {
+  addCoinsBonus,
   addHappinessBonus,
   getCapybaraMood,
   initialStatus
@@ -79,25 +80,36 @@ export function GameScreen({ navigation, route }: Props) {
   const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
   const [message, setMessage] = useState("Olá! Vamos cuidar da sua capivara?");
 
-  useEffect(() => {
-    loadGameStatus().then(setStatus);
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
-      const bonus = route.params?.happinessBonus;
+      let isActive = true;
 
-      if (!bonus) {
-        return;
+      async function syncStatus() {
+        const storedStatus = await loadGameStatus();
+        const bonus = route.params?.happinessBonus;
+
+        if (!isActive) {
+          return;
+        }
+
+        if (!bonus) {
+          setStatus(storedStatus);
+          return;
+        }
+
+        const updatedStatus = addHappinessBonus(storedStatus, bonus);
+        const finalStatus = addCoinsBonus(updatedStatus, 0);
+        setStatus(finalStatus);
+        setMessage("Muito bem! A capivara ficou mais feliz.");
+        await saveGameStatus(finalStatus);
+        navigation.setParams({ happinessBonus: undefined });
       }
 
-      setStatus((currentStatus) => {
-        const updatedStatus = addHappinessBonus(currentStatus, bonus);
-        saveGameStatus(updatedStatus);
-        return updatedStatus;
-      });
-      setMessage("Muito bem! A capivara ficou mais feliz.");
-      navigation.setParams({ happinessBonus: undefined });
+      syncStatus();
+
+      return () => {
+        isActive = false;
+      };
     }, [navigation, route.params?.happinessBonus])
   );
 
@@ -120,7 +132,7 @@ export function GameScreen({ navigation, route }: Props) {
               <View style={styles.topHud}>
                 <View style={styles.coinPill}>
                   <MaterialCommunityIcons color="#F5A623" name="gold" size={21} />
-                  <Text style={styles.coinText}>1250</Text>
+                  <Text style={styles.coinText}>{status.coins}</Text>
                   <View style={styles.plusCircle}>
                     <MaterialCommunityIcons color="#FFFFFF" name="plus" size={20} />
                   </View>
