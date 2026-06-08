@@ -1,0 +1,398 @@
+import { useCallback, useEffect, useState } from "react";
+import {
+  ImageBackground,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+
+import { GameBottomNav } from "../components/GameBottomNav";
+import { StatusBar } from "../components/StatusBar";
+import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
+import { CapybaraStatus, RootStackParamList, RoomName } from "../types/game";
+import {
+  addHappinessBonus,
+  getCapybaraMood,
+  initialStatus
+} from "../utils/statusRules";
+
+const lobbyImage = require("../../assets/images/capybara-lobby-cartoon.png");
+
+type Props = NativeStackScreenProps<RootStackParamList, "Game">;
+
+type ActionTileConfig = {
+  label: string;
+  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
+  room: RoomName;
+  color: string;
+  borderColor: string;
+  iconColor: string;
+};
+
+const actionTiles: ActionTileConfig[] = [
+  {
+    label: "Alimentar",
+    iconName: "carrot",
+    room: "Kitchen",
+    color: "#8DCD3F",
+    borderColor: "#4E8622",
+    iconColor: "#F47B2D"
+  },
+  {
+    label: "Brincar",
+    iconName: "beach",
+    room: "Garden",
+    color: "#FFC25E",
+    borderColor: "#B36B24",
+    iconColor: "#3A8FCE"
+  },
+  {
+    label: "Dormir",
+    iconName: "moon-waning-crescent",
+    room: "Bedroom",
+    color: "#8169D8",
+    borderColor: "#503DA1",
+    iconColor: "#FFE67C"
+  },
+  {
+    label: "Banho",
+    iconName: "shower-head",
+    room: "Bathroom",
+    color: "#57C0D2",
+    borderColor: "#2C7D91",
+    iconColor: "#D6F7FF"
+  }
+];
+
+const moodLabel = {
+  feliz: "Feliz",
+  normal: "Calma",
+  triste: "Precisa de carinho"
+};
+
+export function GameScreen({ navigation, route }: Props) {
+  const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
+  const [message, setMessage] = useState("Olá! Vamos cuidar da sua capivara?");
+
+  useEffect(() => {
+    loadGameStatus().then(setStatus);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const bonus = route.params?.happinessBonus;
+
+      if (!bonus) {
+        return;
+      }
+
+      setStatus((currentStatus) => {
+        const updatedStatus = addHappinessBonus(currentStatus, bonus);
+        saveGameStatus(updatedStatus);
+        return updatedStatus;
+      });
+      setMessage("Muito bem! A capivara ficou mais feliz.");
+      navigation.setParams({ happinessBonus: undefined });
+    }, [navigation, route.params?.happinessBonus])
+  );
+
+  const mood = getCapybaraMood(status);
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.phoneFrame}>
+        <View style={styles.phone}>
+          <View style={styles.lobbyFrame}>
+            <ImageBackground
+              accessibilityLabel="Lobby da capivara em uma sala aconchegante"
+              imageStyle={styles.lobbyBackdrop}
+              resizeMode="cover"
+              source={lobbyImage}
+              style={styles.lobbyImage}
+            >
+              <View style={styles.notch} />
+
+              <View style={styles.topHud}>
+                <View style={styles.coinPill}>
+                  <MaterialCommunityIcons color="#F5A623" name="gold" size={21} />
+                  <Text style={styles.coinText}>1250</Text>
+                  <View style={styles.plusCircle}>
+                    <MaterialCommunityIcons color="#FFFFFF" name="plus" size={20} />
+                  </View>
+                </View>
+
+                <Text style={styles.title}>Casa da{"\n"}Capivara</Text>
+
+                <View style={styles.heartButton}>
+                  <MaterialCommunityIcons color="#FFE8C7" name="heart" size={28} />
+                </View>
+              </View>
+
+              <View style={styles.moodPill}>
+                <Text style={styles.moodText}>Humor: {moodLabel[mood]}</Text>
+              </View>
+
+              <View style={styles.statusPanel}>
+                <StatusBar iconColor="#F47B2D" iconName="carrot" label="Fome" value={status.hunger} color="#8BBB31" />
+                <StatusBar iconColor="#E94B61" iconName="heart" label="Felicidade" value={status.happiness} color="#9BC940" />
+                <StatusBar iconColor="#F28F2E" iconName="flash" label="Energia" value={status.energy} color="#F2A13A" />
+                <StatusBar iconColor="#45BADA" iconName="water" label="Higiene" value={status.hygiene} color="#45BADA" />
+              </View>
+
+              <View style={styles.actionsRow}>
+                {actionTiles.map((tile) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={tile.label}
+                    onPress={() => navigation.navigate(tile.room)}
+                    style={({ pressed }) => [
+                      styles.actionTile,
+                      { backgroundColor: tile.color, borderColor: tile.borderColor },
+                      pressed && styles.pressed
+                    ]}
+                  >
+                    <View style={styles.actionGloss} />
+                    <MaterialCommunityIcons
+                      color={tile.iconColor}
+                      name={tile.iconName}
+                      size={35}
+                    />
+                    <Text style={styles.actionLabel}>{tile.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ImageBackground>
+          </View>
+
+          <View style={styles.messageBoard}>
+            <Text style={styles.message}>{message}</Text>
+          </View>
+
+          <GameBottomNav
+            active="home"
+            onGames={() => navigation.navigate("MiniGames")}
+            onHome={() => navigation.navigate("Game")}
+            onProfile={() => navigation.navigate("Profile")}
+            onShop={() => navigation.navigate("Shop")}
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#202020",
+    padding: 6
+  },
+  phoneFrame: {
+    flex: 1,
+    overflow: "hidden",
+    borderRadius: 34,
+    backgroundColor: "#161616",
+    borderWidth: 4,
+    borderColor: "#161616"
+  },
+  phone: {
+    flex: 1,
+    borderRadius: 29,
+    backgroundColor: "#F8E6BC",
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: 8
+  },
+  lobbyFrame: {
+    flex: 1,
+    minHeight: 560,
+    overflow: "hidden",
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: "#A96325",
+    backgroundColor: "#F1CF8C",
+    shadowColor: "#6D4322",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 7
+  },
+  lobbyImage: {
+    flex: 1,
+    backgroundColor: "#F1CF8C"
+  },
+  lobbyBackdrop: {
+    transform: [{ scale: 1 }]
+  },
+  notch: {
+    position: "absolute",
+    top: 0,
+    left: "36%",
+    right: "36%",
+    height: 22,
+    borderBottomLeftRadius: 13,
+    borderBottomRightRadius: 13,
+    backgroundColor: "#161616"
+  },
+  topHud: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    top: 18,
+    minHeight: 54,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  coinPill: {
+    height: 38,
+    minWidth: 104,
+    alignItems: "center",
+    flexDirection: "row",
+    borderRadius: 20,
+    backgroundColor: "#FFF5D9",
+    borderWidth: 2,
+    borderColor: "#A96325",
+    paddingLeft: 7,
+    paddingRight: 5
+  },
+  coinText: {
+    color: "#4E2D17",
+    fontSize: 17,
+    fontWeight: "900",
+    marginLeft: 4,
+    marginRight: 5
+  },
+  plusCircle: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "#67AF31"
+  },
+  title: {
+    flex: 1,
+    color: "#6A3B1E",
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 25,
+    marginHorizontal: 7,
+    textAlign: "center",
+    textShadowColor: "#FFE3A9",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 1
+  },
+  heartButton: {
+    width: 46,
+    height: 46,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 23,
+    backgroundColor: "#B95632",
+    borderWidth: 3,
+    borderColor: "#713319",
+    shadowColor: "#5D2D18",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  moodPill: {
+    position: "absolute",
+    right: 12,
+    top: 84,
+    maxWidth: 210,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 247, 226, 0.96)",
+    borderWidth: 2,
+    borderColor: "#B87534",
+    paddingHorizontal: 12,
+    paddingVertical: 6
+  },
+  moodText: {
+    color: "#5D351C",
+    fontSize: 14,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  statusPanel: {
+    position: "absolute",
+    right: 12,
+    top: 126,
+    width: 168,
+    borderRadius: 18,
+    backgroundColor: "rgba(255, 247, 226, 0.95)",
+    borderWidth: 2,
+    borderColor: "#B87534",
+    padding: 10,
+    shadowColor: "#6D4322",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6
+  },
+  actionsRow: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 12,
+    flexDirection: "row",
+    gap: 8
+  },
+  actionTile: {
+    flex: 1,
+    minHeight: 82,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    borderWidth: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 7,
+    shadowColor: "#5E351C",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6
+  },
+  actionGloss: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    top: 7,
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 255, 255, 0.22)"
+  },
+  pressed: {
+    opacity: 0.75
+  },
+  actionLabel: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "900",
+    marginTop: 2,
+    textAlign: "center",
+    textShadowColor: "rgba(77, 45, 23, 0.42)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1
+  },
+  messageBoard: {
+    minHeight: 42,
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    paddingVertical: 6
+  },
+  message: {
+    color: "#6A3B1E",
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 23,
+    textAlign: "center"
+  }
+});
