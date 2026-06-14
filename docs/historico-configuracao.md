@@ -331,7 +331,90 @@ Nenhuma neste projeto. O `@react-navigation` v7 manteve a mesma API para
 
 ---
 
-## 7. Configuração do Git e fluxo de fork
+## 7. Problemas ao testar no Expo Go após o upgrade
+
+### Erro 1: "Cannot find module 'babel-preset-expo'"
+
+Aparece no terminal ao rodar `expo start`. O `babel-preset-expo` era uma
+dependência transitiva no SDK 51 e deixou de ser no SDK 54 — precisa ser
+declarado explicitamente no `package.json`:
+
+```bash
+npm install babel-preset-expo
+```
+
+### Erro 2: "private properties are not supported" (tela vermelha no celular)
+
+```
+[runtime not ready]: SyntaxError: 33919:5: private properties are not supported
+```
+
+**Causa real:** incompatibilidade entre a versão do SDK do projeto e a versão
+do Expo Go instalada no dispositivo. O Expo Go suporta apenas as duas últimas
+versões do SDK. Se o projeto estiver numa versão que o Expo Go não suporta
+mais (ou ainda não suporta), o Hermes — motor JavaScript embutido no Expo Go
+— rejeita o bundle.
+
+**Diagnóstico:** verificar qual SDK o Expo Go do dispositivo suporta
+(aparece na tela inicial do app) e comparar com a versão no `package.json`.
+
+**Solução:** manter o projeto na mesma versão de SDK que o Expo Go suporta.
+Para descobrir o SDK mais recente disponível no npm:
+
+```bash
+npm show expo version --json
+```
+
+**Atenção:** não basta o Expo Go estar "atualizado" na loja — a loja pode
+estar oferecendo uma versão que suporta SDK 54 enquanto o npm já tem SDK 56.
+Sempre confirmar com o usuário qual versão o Expo Go do dispositivo alvo
+suporta **antes** de definir qual SDK usar no projeto.
+
+### Erro 3: "PluginError: Unable to resolve a valid config plugin for expo-status-bar"
+
+```
+PluginError: Unable to resolve a valid config plugin for expo-status-bar
+```
+
+**Causa:** o comando `expo install expo@~56.0.0 --fix` adicionou
+automaticamente `"expo-status-bar"` na lista de `plugins` do `app.json`.
+Ao reverter para SDK 54, a versão antiga do `expo-status-bar` (`~3.0.9`)
+não tem `app.plugin.js` e o Expo não consegue carregar o plugin.
+
+**Solução:** remover a entrada de `plugins` do `app.json`:
+
+```json
+// Remover este bloco do app.json:
+"plugins": [
+  "expo-status-bar"
+]
+```
+
+### Erro 4: "Port 8081 is already in use"
+
+Processo Node anterior ficou preso em segundo plano. Para liberar a porta:
+
+```powershell
+# Descobrir o PID do processo na porta 8081
+Get-NetTCPConnection -LocalPort 8081 | Select-Object OwningProcess
+
+# Encerrar o processo (substituir XXXX pelo PID)
+Stop-Process -Id XXXX -Force
+```
+
+### Lição aprendida: sequência segura para testar no celular
+
+1. Confirmar a versão de SDK que o Expo Go do dispositivo suporta
+2. Instalar a versão de SDK correspondente no projeto
+3. Deletar `node_modules`, `package-lock.json` e `.expo` antes de reinstalar
+   após qualquer troca de SDK (cache corrompido causa erros difíceis de diagnosticar)
+4. Rodar sempre com `--clear` na primeira vez após um upgrade: `npx expo start --tunnel --clear`
+5. Limpar o cache do Expo Go no dispositivo: Configurações → Aplicativos →
+   Expo Go → Armazenamento → Limpar cache
+
+---
+
+## 8. Configuração do Git e fluxo de fork
 
 ### Identidade global do Git
 
