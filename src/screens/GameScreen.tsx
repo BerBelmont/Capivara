@@ -11,17 +11,17 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { StatusBar } from "../components/StatusBar";
 import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
 import { CapybaraStatus, RootStackParamList, RoomName } from "../types/game";
 import {
   addCoinsBonus,
   addHappinessBonus,
-  getCapybaraMood,
   initialStatus
 } from "../utils/statusRules";
 
 const lobbyImage = require("../../assets/images/capybara-lobby-cartoon.png");
+
+const BAR_TRACK_HEIGHT = 72;
 
 type Props = NativeStackScreenProps<RootStackParamList, "Game">;
 
@@ -32,6 +32,14 @@ type ActionTileConfig = {
   color: string;
   borderColor: string;
   iconColor: string;
+};
+
+type StatusBarConfig = {
+  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
+  iconColor: string;
+  label: string;
+  value: number;
+  fillColor: string;
 };
 
 const actionTiles: ActionTileConfig[] = [
@@ -69,15 +77,8 @@ const actionTiles: ActionTileConfig[] = [
   }
 ];
 
-const moodLabel = {
-  feliz: "Feliz",
-  normal: "Calma",
-  triste: "Precisa de carinho"
-};
-
 export function GameScreen({ navigation, route }: Props) {
   const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
-  const [message, setMessage] = useState("Olá! Vamos cuidar da sua capivara?");
 
   useFocusEffect(
     useCallback(() => {
@@ -99,7 +100,6 @@ export function GameScreen({ navigation, route }: Props) {
         const updatedStatus = addHappinessBonus(storedStatus, bonus);
         const finalStatus = addCoinsBonus(updatedStatus, 0);
         setStatus(finalStatus);
-        setMessage("Muito bem! A capivara ficou mais feliz.");
         await saveGameStatus(finalStatus);
         navigation.setParams({ happinessBonus: undefined });
       }
@@ -112,7 +112,12 @@ export function GameScreen({ navigation, route }: Props) {
     }, [navigation, route.params?.happinessBonus])
   );
 
-  const mood = getCapybaraMood(status);
+  const statusBars: StatusBarConfig[] = [
+    { iconName: "carrot", iconColor: "#F47B2D", label: "Fome",    value: status.hunger,    fillColor: "#8BBB31" },
+    { iconName: "heart",  iconColor: "#E94B61", label: "Alegria", value: status.happiness, fillColor: "#F06292" },
+    { iconName: "flash",  iconColor: "#F28F2E", label: "Energia", value: status.energy,    fillColor: "#FFC107" },
+    { iconName: "water",  iconColor: "#45BADA", label: "Higiene", value: status.hygiene,   fillColor: "#45BADA" },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -137,6 +142,23 @@ export function GameScreen({ navigation, route }: Props) {
             >
               <MaterialCommunityIcons color="#FFE8C7" name="account-circle" size={30} />
             </Pressable>
+          </View>
+
+          {/* Barras de status verticais: ícone → barra → label */}
+          <View style={styles.statusBarsRow}>
+            {statusBars.map((bar) => {
+              const fillColor = bar.value < 30 ? "#E94B61" : bar.fillColor;
+              const fillHeight = (bar.value / 100) * BAR_TRACK_HEIGHT;
+              return (
+                <View key={bar.label} style={styles.vBarWidget}>
+                  <MaterialCommunityIcons color={bar.iconColor} name={bar.iconName} size={24} />
+                  <View style={styles.vBarTrack}>
+                    <View style={[styles.vBarFill, { height: fillHeight, backgroundColor: fillColor }]} />
+                  </View>
+                  <Text style={styles.vBarLabel}>{bar.label}</Text>
+                </View>
+              );
+            })}
           </View>
 
           {/* Ações de cuidado: fila horizontal esquerda → direita */}
@@ -172,21 +194,8 @@ export function GameScreen({ navigation, route }: Props) {
               source={lobbyImage}
               style={styles.lobbyImage}
             >
-              <View style={styles.moodPill}>
-                <Text style={styles.moodText}>Humor: {moodLabel[mood]}</Text>
-              </View>
-
-              <View style={styles.statusPanel}>
-                <StatusBar iconColor="#F47B2D" iconName="carrot" label="Fome" value={status.hunger} color="#8BBB31" />
-                <StatusBar iconColor="#E94B61" iconName="heart" label="Felicidade" value={status.happiness} color="#9BC940" />
-                <StatusBar iconColor="#F28F2E" iconName="flash" label="Energia" value={status.energy} color="#F2A13A" />
-                <StatusBar iconColor="#45BADA" iconName="water" label="Higiene" value={status.hygiene} color="#45BADA" />
-              </View>
+              {null}
             </ImageBackground>
-          </View>
-
-          <View style={styles.messageBoard}>
-            <Text style={styles.message}>{message}</Text>
           </View>
 
         </View>
@@ -265,6 +274,42 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5
   },
+  statusBarsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "flex-end",
+    backgroundColor: "#FFF5D9",
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#A96325",
+    paddingHorizontal: 8,
+    paddingTop: 10,
+    paddingBottom: 8,
+    marginBottom: 8
+  },
+  vBarWidget: {
+    alignItems: "center",
+    gap: 4
+  },
+  vBarTrack: {
+    width: 30,
+    height: BAR_TRACK_HEIGHT,
+    backgroundColor: "#E7D7B7",
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "#C49A52",
+    overflow: "hidden",
+    justifyContent: "flex-end"
+  },
+  vBarFill: {
+    width: "100%"
+  },
+  vBarLabel: {
+    color: "#4E2D17",
+    fontSize: 12,
+    fontWeight: "900",
+    textAlign: "center"
+  },
   actionsRow: {
     flexDirection: "row",
     gap: 8,
@@ -326,52 +371,5 @@ const styles = StyleSheet.create({
   },
   lobbyBackdrop: {
     transform: [{ scale: 1 }]
-  },
-  moodPill: {
-    position: "absolute",
-    right: 12,
-    top: 12,
-    maxWidth: 210,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 247, 226, 0.96)",
-    borderWidth: 2,
-    borderColor: "#B87534",
-    paddingHorizontal: 12,
-    paddingVertical: 6
-  },
-  moodText: {
-    color: "#5D351C",
-    fontSize: 14,
-    fontWeight: "900",
-    textAlign: "center"
-  },
-  statusPanel: {
-    position: "absolute",
-    right: 12,
-    top: 54,
-    width: 168,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 247, 226, 0.95)",
-    borderWidth: 2,
-    borderColor: "#B87534",
-    padding: 10,
-    shadowColor: "#6D4322",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 6
-  },
-  messageBoard: {
-    minHeight: 42,
-    justifyContent: "center",
-    paddingHorizontal: 4,
-    paddingVertical: 6
-  },
-  message: {
-    color: "#6A3B1E",
-    fontSize: 18,
-    fontWeight: "900",
-    lineHeight: 23,
-    textAlign: "center"
   }
 });
