@@ -4,7 +4,6 @@ import {
   Image,
   ImageSourcePropType,
   StyleSheet,
-  Text,
   View
 } from "react-native";
 
@@ -86,9 +85,6 @@ export function CapybaraDisplay({
           style={[styles.image, compact && styles.compactImage]}
         />
       </Animated.View>
-      <View style={styles.badge}>
-        <Text style={styles.mood}>Humor: {moodText[mood]}</Text>
-      </View>
     </View>
   );
 }
@@ -117,24 +113,6 @@ const styles = StyleSheet.create({
   },
   compactImage: {
     height: 330
-  },
-  badge: {
-    position: "absolute",
-    right: 12,
-    top: 12,
-    alignSelf: "center",
-    borderRadius: 18,
-    backgroundColor: "#FFF7E7",
-    borderWidth: 2,
-    borderColor: "#C1843C",
-    paddingHorizontal: 12,
-    paddingVertical: 7
-  },
-  mood: {
-    color: "#5B3318",
-    fontSize: 16,
-    fontWeight: "800",
-    textAlign: "center"
   },
   sparkleOne: {
     position: "absolute",
