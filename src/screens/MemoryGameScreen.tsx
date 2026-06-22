@@ -3,7 +3,9 @@ import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { ActionButton } from "../components/ActionButton";
+import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
 import { RootStackParamList } from "../types/game";
+import { addHappinessBonus } from "../utils/statusRules";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MemoryGame">;
 
@@ -57,8 +59,10 @@ export function MemoryGameScreen({ navigation }: Props) {
     }
   }
 
-  function finishGame() {
-    navigation.navigate("Game", { happinessBonus: 15 });
+  async function finishGame() {
+    const current = await loadGameStatus();
+    await saveGameStatus(addHappinessBonus(current, 15));
+    navigation.goBack();
   }
 
   const completed = matchedIds.length === cards.length;

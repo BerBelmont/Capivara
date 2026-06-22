@@ -192,11 +192,7 @@ export function RoomScreen({ navigation, route }: Props) {
 
   function handlePrev() {
     if (!prevPage) return;
-    if (prevPage.room === null) {
-      navigation.goBack();
-    } else {
-      navigation.replace(prevPage.room);
-    }
+    navigation.replace(prevPage.room);
   }
 
   function handleNext() {

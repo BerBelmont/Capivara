@@ -5,11 +5,10 @@ import { RoomName } from "../types/game";
 
 export type PageInfo = {
   label: string;
-  room: RoomName | null;
+  room: RoomName;
 };
 
 export const ROOM_PAGES: PageInfo[] = [
-  { label: "Início",    room: null       },
   { label: "Alimentar", room: "Kitchen"  },
   { label: "Brincar",   room: "Garden"   },
   { label: "Dormir",    room: "Bedroom"  },

@@ -100,7 +100,7 @@ export function ProfileScreen({ navigation }: Props) {
           <GameBottomNav
             active="profile"
             onGames={() => navigation.navigate("MiniGames")}
-            onHome={() => navigation.navigate("Game")}
+            onHome={() => navigation.navigate("Kitchen")}
             onProfile={() => navigation.navigate("Profile")}
             onShop={() => navigation.navigate("Shop")}
           />
