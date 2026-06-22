@@ -1,6 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { CatchFoodGameScreen } from "./src/screens/CatchFoodGameScreen";
 import { GameScreen } from "./src/screens/GameScreen";
@@ -14,7 +15,7 @@ import { RootStackParamList } from "./src/types/game";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  return (
+  const nav = (
     <NavigationContainer>
       <StatusBar style="dark" />
       <Stack.Navigator
@@ -37,4 +38,27 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
+
+  if (Platform.OS !== "web") return nav;
+
+  return (
+    <View style={styles.webOuter}>
+      <View style={styles.webPhone}>{nav}</View>
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  webOuter: {
+    flex: 1,
+    backgroundColor: "#111111",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  webPhone: {
+    width: 390,
+    height: 844,
+    overflow: "hidden",
+    borderRadius: 44,
+  },
+});
