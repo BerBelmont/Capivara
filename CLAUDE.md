@@ -35,7 +35,7 @@ de considerar uma tarefa concluída.
 
 ## Estrutura do projeto
 
-- `App.tsx` — ponto de entrada; registra todas as telas no stack de navegação
+- `App.tsx` — ponto de entrada; carrega último cômodo visitado e registra telas no stack
 - `src/types/` — definições de tipo TypeScript (vocabulário do jogo). Comece por aqui.
 - `src/screens/` — telas completas (uma por arquivo)
 - `src/components/` — peças de UI reutilizáveis montadas pelas telas
@@ -60,9 +60,9 @@ Novos assets de imagem devem ser exportados de `src/assets/capySprites.ts`.
 - As ações têm trade-offs (definidos em `src/utils/statusRules`): por exemplo,
   comer reduz higiene e brincar reduz energia. Esse equilíbrio é o núcleo da
   jogabilidade — preserve-o ao mexer nas regras.
-- Telas: **Game** (ponto de entrada), MiniGames, MemoryGame, CatchFoodGame,
-  Shop, Profile, e 4 cômodos (Kitchen, Bathroom, Garden, Bedroom) que
-  reutilizam o mesmo `RoomScreen`. Não existe mais HomeScreen.
+- Telas: MiniGames, MemoryGame, CatchFoodGame, Shop, Profile, e 4 cômodos
+  (Kitchen, Bathroom, Garden, Bedroom) que reutilizam o mesmo `RoomScreen`.
+  Não existe mais GameScreen/HomeScreen — o app abre diretamente no último cômodo visitado.
 
 ### Navegação por cômodos (PageNav)
 
@@ -70,36 +70,37 @@ A navegação entre cômodos usa paginação com setas e bolinhas (`PageNav`),
 sem tiles/botões individuais. A ordem fixa é:
 
 ```
-Início (Game) → Alimentar (Kitchen) → Brincar (Garden) → Dormir (Bedroom) → Banho (Bathroom)
+Alimentar (Kitchen) → Brincar (Garden) → Dormir (Bedroom) → Banho (Bathroom)
 ```
 
 - O componente `PageNav` vive em `src/components/PageNav.tsx` e exporta
   também a constante `ROOM_PAGES` com a ordem canônica — use ela em qualquer
   lugar que precise da ordem dos cômodos.
 - Navegação entre cômodos usa `navigation.replace()` para não empilhar telas.
-  Voltar ao Início usa `navigation.goBack()`.
 - O último cômodo visitado é salvo via `saveLastRoom` e restaurado ao abrir
-  o app (lógica em `GameScreen` com `useRef hasRestoredRoom`).
+  o app (lógica em `App.tsx` com `useState`/`useEffect`).
 
-### Layout do GameScreen
+### TopBar
 
-- **Linha superior:** moedas (esquerda) + botão de perfil (direita)
-- **Barras de status:** 4 barras verticais estilo Pou (fome/alegria/energia/higiene)
-- **PageNav:** paginação de cômodos logo abaixo das barras
-- **Área principal:** imagem do lobby (`capybara-lobby-cartoon.png`) flex:1
-
-Não reintroduza `GameBottomNav` nem tiles de ação no `GameScreen` sem discutir
-antes — a remoção foi intencional para simplificar a interface para o público idoso.
+O componente `src/components/TopBar.tsx` exibe moedas (esquerda) e botão de
+perfil (direita). É usado em todos os cômodos. Aceita `coins: number` e
+`onProfile: () => void`.
 
 ### Layout do RoomScreen
 
 Cada cômodo tem:
-- Barras de status compactas (altura 44px) no topo
+- `TopBar` (moedas + perfil) no topo
+- Barras de status compactas (altura 44px) flutuantes
 - `PageNav` para trocar de cômodo
-- `CapybaraDisplay` com a cena do cômodo
-- Botão de ação principal (`ActionButton`)
-- **Barra inferior fixa** com 3 slots (esquerda / centro / direita), onde
-  a direita é sempre a loja. Os ítens do centro/esquerda são visuais por ora.
+- Capy composta por camadas de sprites (`capyBody` + `capyEyes` + `capyMouth`)
+  sobre o background de cena, com animação de bounce
+- **Barra inferior fixa** com 3 slots (esquerda / centro / direita):
+  - Centro: `Pressable` que dispara a ação de cuidado do cômodo
+  - Direita: sempre a loja
+  - Esquerda: visual por ora
+
+Não há mais `ActionButton` separado no corpo da tela — a ação fica exclusivamente
+no slot central da barra inferior.
 
 ## Sistema de sprites da Capy (`src/assets/capySprites.ts`)
 
@@ -108,7 +109,7 @@ Todas as imagens estão em `assets/images/` e exportadas de `capySprites.ts`.
 
 | Exportação | Camada | Conteúdo |
 |---|---|---|
-| `capyBody` | Base | Corpo inteiro: `normal`, `cesta`, `pipoca`, `sad`, `sleepHat` |
+| `capyBody` | Base | Corpo inteiro: `normal`, `cesta`, `pipoca`, `sad` |
 | `capyEyes` | Olhos | `openNormal`, `openSick`, `tired`, `closed` |
 | `capyMouth` | Boca/bochechas | `normal`, `happy`, `veryHappy`, `joke`, `sick`, `uau`, `faceTired` |
 | `capyWalk` | Animação | Capy andando com cesta: `center`, `right`, `left` |
@@ -119,9 +120,57 @@ Todas as imagens estão em `assets/images/` e exportadas de `capySprites.ts`.
 **Regra:** não use `require("../../assets/images/...")` diretamente nas telas —
 importe de `capySprites.ts` para manter os paths centralizados.
 
-O `CapybaraDisplay` atual ainda usa imagens de cena únicas por cômodo
-(`capybara-kitchen.png` etc.). A migração para composição em camadas com
-`capyBody` + `capyEyes` + `capyMouth` é o próximo passo planejado.
+### Posicionamento das camadas de rosto (ROOM_FACE)
+
+As camadas de olhos e boca são posicionadas via `top/left/width/height` absolutos
+sobre o `capyBody` (220×330px). Os valores ficam em `DEFAULT_FACE` em
+`RoomScreen.tsx` e se aplicam a todos os cômodos. Cada cômodo pode sobrescrever
+via `ROOM_FACE[roomName]`.
+
+Valores calibrados e aprovados:
+```typescript
+const DEFAULT_FACE = {
+  eyeW: 121, eyeH: 35, eyeTop: 75, eyeLeft: 48,
+  mouthW: 150, mouthH: 74, mouthTop: 90, mouthLeft: 35,
+};
+```
+
+## Imagens de background dos cômodos
+
+As imagens de cena (`capybara-kitchen.png` etc.) devem estar em `assets/images/`
+e ter **390 × 844 px** — proporção exata da tela lógica do celular alvo.
+
+Para redimensionar novas imagens preservando o conteúdo (usa `sharp`):
+```bash
+node -e "
+const sharp = require('sharp');
+sharp('input.png')
+  .resize(390, 844, { fit: 'cover', position: 'centre' })
+  .toFile('output.png');
+"
+```
+
+### Padrão correto para background de tela cheia
+
+**Nunca use `ImageBackground` com `flex: 1` sozinho** — não funciona de forma
+confiável em todos os dispositivos Android.
+
+O padrão correto é:
+```tsx
+<View style={{ flex: 1 }}>
+  <Image
+    source={config.background}
+    resizeMode="cover"
+    style={StyleSheet.absoluteFillObject}
+  />
+  {/* conteúdo da tela por cima */}
+</View>
+```
+
+`StyleSheet.absoluteFillObject` (`top/left/right/bottom: 0`) garante que a
+imagem preenche o pai exatamente, independente das dimensões do dispositivo.
+`Dimensions.get("window")` **não deve** ser usado para dimensionar o background
+— retorna valores que não correspondem à área real do View em alguns dispositivos.
 
 ## Acessibilidade (requisito central, não opcional)
 

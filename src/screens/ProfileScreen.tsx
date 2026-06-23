@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { GameBottomNav } from "../components/GameBottomNav";
 import { RootStackParamList } from "../types/game";
 
-const capybaraHero = require("../../assets/images/capybara-hero.png");
+const capybaraHero = require("../../assets/images/capybara-lobby-cartoon.png");
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 

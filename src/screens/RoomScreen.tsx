@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Image,
-  ImageBackground,
   ImageSourcePropType,
   Pressable,
   SafeAreaView,
@@ -65,13 +64,12 @@ type FaceLayout = {
 };
 
 const DEFAULT_FACE: FaceLayout = {
-  eyeW: 154, eyeH: 45, eyeTop: 36, eyeLeft: 33,
-  mouthW: 165, mouthH: 81, mouthTop: 84, mouthLeft: 28,
+  eyeW: 121, eyeH: 35, eyeTop: 75, eyeLeft: 48,
+  mouthW: 150, mouthH: 74, mouthTop: 90, mouthLeft: 35,
 };
 
-// Overrides por cômodo — só preencha o que difere do DEFAULT_FACE
 const ROOM_FACE: Record<RoomName, FaceLayout> = {
-  Kitchen:  { ...DEFAULT_FACE, eyeTop: 160, eyeLeft: 43, eyeW: 134, eyeH: 39, mouthTop: 110, mouthLeft: 35, mouthW: 150, mouthH: 74 },
+  Kitchen:  { ...DEFAULT_FACE },
   Bathroom: { ...DEFAULT_FACE },
   Garden:   { ...DEFAULT_FACE },
   Bedroom:  { ...DEFAULT_FACE },
@@ -129,8 +127,6 @@ const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
 
 function getBodySprite(mood: CapybaraMood, room: RoomName) {
   if (mood === "triste") return capyBody.sad;
-  if (room === "Bedroom") return capyBody.sleepHat;
-  if (room === "Kitchen") return capyBody.cesta;
   return capyBody.normal;
 }
 
@@ -215,11 +211,12 @@ export function RoomScreen({ navigation, route }: Props) {
   ];
 
   return (
-    <ImageBackground
-      resizeMode="cover"
-      source={config.background}
-      style={styles.background}
-    >
+    <View style={styles.background}>
+      <Image
+        resizeMode="cover"
+        source={config.background}
+        style={StyleSheet.absoluteFillObject}
+      />
       <SafeAreaView style={styles.safeArea}>
 
         {/* Barra superior: moedas à esquerda, perfil à direita */}
@@ -309,7 +306,7 @@ export function RoomScreen({ navigation, route }: Props) {
         </View>
 
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }
 
