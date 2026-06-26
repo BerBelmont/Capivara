@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  Animated,
   Image,
   ImageSourcePropType,
   Pressable,
@@ -104,8 +103,8 @@ const roomConfigs: Record<RoomName, RoomConfig> = {
 
 const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
   Kitchen:  {
-    left:   { iconName: "medical-bag",        label: "Remédios"                   },
-    center: { iconName: "pill",               label: "Remédio",  hasArrows: true  },
+    left:   { iconName: "fridge",              label: "Geladeira"                  },
+    center: { iconName: "food-apple",         label: "Alimentar", hasArrows: false },
     right:  { iconName: "store",              label: "Loja"                       }
   },
   Bathroom: {
@@ -144,8 +143,6 @@ function getMouthSprite(mood: CapybaraMood) {
 export function RoomScreen({ navigation, route }: Props) {
   const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
   const [message, setMessage] = useState("");
-  const bounce = useRef(new Animated.Value(0)).current;
-
   const config = roomConfigs[route.name];
   const barConfig = roomBarConfigs[route.name];
   const face = ROOM_FACE[route.name];
@@ -161,30 +158,6 @@ export function RoomScreen({ navigation, route }: Props) {
       saveLastRoom(route.name);
     }, [route.name])
   );
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounce, {
-          toValue: 1,
-          duration: mood === "triste" ? 1300 : 850,
-          useNativeDriver: true
-        }),
-        Animated.timing(bounce, {
-          toValue: 0,
-          duration: mood === "triste" ? 1300 : 850,
-          useNativeDriver: true
-        })
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bounce, mood]);
-
-  const translateY = bounce.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, mood === "triste" ? 4 : -10]
-  });
 
   function handlePrev() {
     if (!prevPage) return;
@@ -248,7 +221,7 @@ export function RoomScreen({ navigation, route }: Props) {
 
         {/* Capy composta por camadas */}
         <View style={styles.spriteArea}>
-          <Animated.View style={[styles.spriteContainer, { transform: [{ translateY }] }]}>
+          <View style={styles.spriteContainer}>
             <Image
               resizeMode="contain"
               source={getBodySprite(mood, route.name)}
@@ -264,7 +237,7 @@ export function RoomScreen({ navigation, route }: Props) {
               source={getMouthSprite(mood)}
               style={[styles.absoluteLayer, { top: face.mouthTop, left: face.mouthLeft, width: face.mouthW, height: face.mouthH }]}
             />
-          </Animated.View>
+          </View>
         </View>
 
         {/* Mensagem de feedback */}

@@ -28,7 +28,8 @@ sempre simplicidade e clareza.
 - Rodar no navegador: `npx expo start --web`
 - Verificar tipos: `npx tsc --noEmit`
 
-No Windows com PowerShell, substituir `npx` por `npx.cmd` se o comando travar.
+No Windows com PowerShell, substituir `npx` por `npx.cmd` se o comando travar ou aparecer o erro
+`não pode ser carregado porque a execução de scripts foi desabilitada neste sistema` (PSSecurityException).
 
 Sempre rode `npx tsc --noEmit` após mudanças e garanta que passa sem erros antes
 de considerar uma tarefa concluída.
