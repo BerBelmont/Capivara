@@ -35,7 +35,7 @@ const SPEED_STEP_PER_ROUND = 0.08;
 const MIN_SPEED_FACTOR = 0.65;
 
 // Cone spawns from tree canopy area (top ~15% of game area)
-const CONE_START_Y = -30;
+const CONE_START_Y = 34;
 // Game area height is roughly SCREEN_HEIGHT - topRow(76) - messageArea(96) - safeArea padding
 const GAME_AREA_HEIGHT = SCREEN_HEIGHT - 76 - 96 - 32;
 const CONE_END_Y = GAME_AREA_HEIGHT - 20;
@@ -44,6 +44,8 @@ const CONE_END_Y = GAME_AREA_HEIGHT - 20;
 const BASKET_Y = GAME_AREA_HEIGHT - 110;
 const BASKET_WIDTH = 90;
 const BASKET_HEIGHT = 75;
+const ARAUCARIA_WIDTH = Math.min(SCREEN_WIDTH * 1.22, 520);
+const ARAUCARIA_HEIGHT = Math.min(GAME_AREA_HEIGHT * 0.96, 520);
 
 const CONE_SPAWN_MARGIN = 24;
 
@@ -54,22 +56,19 @@ const COLLISION_TOLERANCE_X = 30;
 const CONE_WIDTH = 34;
 
 const gameBackground = require("../../assets/images/capybara-hero.png");
+const araucariaImage = require("../../assets/images/araucaria.png");
 
 // Static requires — React Native bundler needs these at build time
 const BASKET_IMAGES = [
-  require("../../assets/images/cesta-pinhas-1un.png"),
+  require("../../assets/images/cestas-pinhas.png"),
   require("../../assets/images/cesta-pinhas-2un.png"),
   require("../../assets/images/cesta-pinhas-3un.png"),
   require("../../assets/images/cesta-pinhas-4un.png"),
   require("../../assets/images/cesta-pinhas-5un.png"),
 ];
 
-// Returns basket image index (0-4) based on collected count
-// 0 collected = empty basket (null = use drawn basket)
-// 1-2 = index 0, 3-4 = index 1, 5-6 = index 2, 7-8 = index 3, 9-10 = index 4
-function getBasketImageIndex(collected: number): number | null {
-  if (collected === 0) return null;
-  return Math.min(Math.floor((collected - 1) / 2), 4);
+function getBasketImageIndex(collected: number): number {
+  return Math.min(Math.floor(collected / 2), 4);
 }
 
 function getRoundRewardMultiplier(round: number): number {
@@ -389,6 +388,19 @@ export function CatchFoodGameScreen({ navigation }: Props) {
           resizeMode="cover"
         />
 
+        <View pointerEvents="none" style={styles.araucariaFrame}>
+          <Image
+            source={araucariaImage}
+            style={styles.araucariaShadow}
+            resizeMode="contain"
+          />
+          <Image
+            source={araucariaImage}
+            style={styles.araucaria}
+            resizeMode="contain"
+          />
+        </View>
+
         {/* Falling cone */}
         {coneVisible && (
           <Animated.View
@@ -428,22 +440,15 @@ export function CatchFoodGameScreen({ navigation }: Props) {
           </Animated.View>
         )}
 
-        {/* Basket — image when collected > 0, drawn when empty */}
+        {/* Basket */}
         <Animated.View
           style={[styles.basket, { left: basketAnimX }]}
         >
-          {basketImageIndex !== null ? (
-            <Image
-              source={BASKET_IMAGES[basketImageIndex]}
-              style={styles.basketImage}
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={styles.basketBody}>
-              <View style={styles.basketHandle} />
-              <View style={styles.basketWeave} />
-            </View>
-          )}
+          <Image
+            source={BASKET_IMAGES[basketImageIndex]}
+            style={styles.basketImage}
+            resizeMode="contain"
+          />
         </Animated.View>
       </View>
 
@@ -550,6 +555,34 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: "hidden"
   },
+  araucariaFrame: {
+    position: "absolute",
+    top: -24,
+    alignSelf: "center",
+    width: ARAUCARIA_WIDTH,
+    height: ARAUCARIA_HEIGHT,
+    zIndex: 4,
+    shadowColor: "#12230F",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.42,
+    shadowRadius: 18,
+    elevation: 10
+  },
+  araucariaShadow: {
+    position: "absolute",
+    top: 15,
+    left: 12,
+    width: "100%",
+    height: "100%",
+    opacity: 0.32,
+    tintColor: "#102412",
+    transform: [{ scaleX: 1.02 }, { scaleY: 1.01 }]
+  },
+  araucaria: {
+    width: "100%",
+    height: "100%",
+    opacity: 0.98
+  },
   fallingCone: {
     position: "absolute",
     top: 0,
@@ -602,33 +635,6 @@ const styles = StyleSheet.create({
   basketImage: {
     width: "100%",
     height: "100%"
-  },
-  basketBody: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 20,
-    backgroundColor: "#C98B42",
-    borderWidth: 3,
-    borderColor: "#8A5428",
-    overflow: "hidden"
-  },
-  basketHandle: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    top: -16,
-    height: 22,
-    borderRadius: 16,
-    borderWidth: 4,
-    borderColor: "#8A5428"
-  },
-  basketWeave: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: "45%",
-    height: 6,
-    backgroundColor: "rgba(122, 67, 29, 0.28)"
   },
   messageArea: {
     minHeight: 76,
