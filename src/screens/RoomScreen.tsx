@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  Animated,
   Image,
-  ImageBackground,
   ImageSourcePropType,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -13,8 +12,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { ActionButton } from "../components/ActionButton";
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
+import { TopBar } from "../components/TopBar";
 import { capyBody, capyEyes, capyMouth } from "../assets/capySprites";
 import { loadGameStatus, saveGameStatus, saveLastRoom } from "../storage/gameStorage";
 import {
@@ -53,8 +52,8 @@ type RoomBottomBarConfig = {
 
 const COMPACT_BAR_HEIGHT = 44;
 
-const SPRITE_WIDTH = 200;
-const SPRITE_HEIGHT = 300;
+const SPRITE_WIDTH = 220;
+const SPRITE_HEIGHT = 330;
 
 // Posições das camadas de rosto sobrepostas ao corpo.
 // Cada cômodo pode sobrescrever os valores padrão individualmente.
@@ -64,13 +63,12 @@ type FaceLayout = {
 };
 
 const DEFAULT_FACE: FaceLayout = {
-  eyeW: 140, eyeH: 41, eyeTop: 33, eyeLeft: 30,
-  mouthW: 150, mouthH: 74, mouthTop: 76, mouthLeft: 25,
+  eyeW: 121, eyeH: 35, eyeTop: 75, eyeLeft: 48,
+  mouthW: 150, mouthH: 74, mouthTop: 90, mouthLeft: 35,
 };
 
-// Overrides por cômodo — só preencha o que difere do DEFAULT_FACE
 const ROOM_FACE: Record<RoomName, FaceLayout> = {
-  Kitchen:  { ...DEFAULT_FACE, eyeTop: 145, eyeLeft: 39, eyeW: 122, eyeH: 35, mouthTop: 100, mouthLeft: 32, mouthW: 136, mouthH: 67 },
+  Kitchen:  { ...DEFAULT_FACE },
   Bathroom: { ...DEFAULT_FACE },
   Garden:   { ...DEFAULT_FACE },
   Bedroom:  { ...DEFAULT_FACE },
@@ -105,8 +103,8 @@ const roomConfigs: Record<RoomName, RoomConfig> = {
 
 const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
   Kitchen:  {
-    left:   { iconName: "medical-bag",        label: "Remédios"                   },
-    center: { iconName: "pill",               label: "Remédio",  hasArrows: true  },
+    left:   { iconName: "fridge",              label: "Geladeira"                  },
+    center: { iconName: "food-apple",         label: "Alimentar", hasArrows: false },
     right:  { iconName: "store",              label: "Loja"                       }
   },
   Bathroom: {
@@ -128,8 +126,6 @@ const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
 
 function getBodySprite(mood: CapybaraMood, room: RoomName) {
   if (mood === "triste") return capyBody.sad;
-  if (room === "Bedroom") return capyBody.sleepHat;
-  if (room === "Kitchen") return capyBody.cesta;
   return capyBody.normal;
 }
 
@@ -147,8 +143,6 @@ function getMouthSprite(mood: CapybaraMood) {
 export function RoomScreen({ navigation, route }: Props) {
   const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
   const [message, setMessage] = useState("");
-  const bounce = useRef(new Animated.Value(0)).current;
-
   const config = roomConfigs[route.name];
   const barConfig = roomBarConfigs[route.name];
   const face = ROOM_FACE[route.name];
@@ -165,37 +159,9 @@ export function RoomScreen({ navigation, route }: Props) {
     }, [route.name])
   );
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounce, {
-          toValue: 1,
-          duration: mood === "triste" ? 1300 : 850,
-          useNativeDriver: true
-        }),
-        Animated.timing(bounce, {
-          toValue: 0,
-          duration: mood === "triste" ? 1300 : 850,
-          useNativeDriver: true
-        })
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bounce, mood]);
-
-  const translateY = bounce.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, mood === "triste" ? 4 : -10]
-  });
-
   function handlePrev() {
     if (!prevPage) return;
-    if (prevPage.room === null) {
-      navigation.goBack();
-    } else {
-      navigation.replace(prevPage.room);
-    }
+    navigation.replace(prevPage.room);
   }
 
   function handleNext() {
@@ -218,12 +184,16 @@ export function RoomScreen({ navigation, route }: Props) {
   ];
 
   return (
-    <ImageBackground
-      resizeMode="cover"
-      source={config.background}
-      style={styles.background}
-    >
+    <View style={styles.background}>
+      <Image
+        resizeMode="cover"
+        source={config.background}
+        style={StyleSheet.absoluteFillObject}
+      />
       <SafeAreaView style={styles.safeArea}>
+
+        {/* Barra superior: moedas à esquerda, perfil à direita */}
+        <TopBar coins={status.coins} onProfile={() => navigation.navigate("Profile")} />
 
         {/* Barras de status flutuantes */}
         <View style={styles.statusBarsRow}>
@@ -251,7 +221,7 @@ export function RoomScreen({ navigation, route }: Props) {
 
         {/* Capy composta por camadas */}
         <View style={styles.spriteArea}>
-          <Animated.View style={[styles.spriteContainer, { transform: [{ translateY }] }]}>
+          <View style={styles.spriteContainer}>
             <Image
               resizeMode="contain"
               source={getBodySprite(mood, route.name)}
@@ -267,7 +237,7 @@ export function RoomScreen({ navigation, route }: Props) {
               source={getMouthSprite(mood)}
               style={[styles.absoluteLayer, { top: face.mouthTop, left: face.mouthLeft, width: face.mouthW, height: face.mouthH }]}
             />
-          </Animated.View>
+          </View>
         </View>
 
         {/* Mensagem de feedback */}
@@ -277,11 +247,6 @@ export function RoomScreen({ navigation, route }: Props) {
           </View>
         ) : null}
 
-        {/* Botão de ação */}
-        <View style={styles.actionRow}>
-          <ActionButton icon={config.icon} label={config.actionLabel} onPress={handleCareAction} />
-        </View>
-
         {/* Barra inferior do cômodo */}
         <View style={styles.roomBar}>
           <View style={styles.barSlot}>
@@ -289,7 +254,12 @@ export function RoomScreen({ navigation, route }: Props) {
             <Text style={styles.barLabel}>{barConfig.left.label}</Text>
           </View>
 
-          <View style={[styles.barSlot, styles.barSlotCenter]}>
+          <Pressable
+            accessibilityLabel={config.actionLabel}
+            accessibilityRole="button"
+            onPress={handleCareAction}
+            style={({ pressed }) => [styles.barSlot, styles.barSlotCenter, pressed && styles.pressed]}
+          >
             {barConfig.center.hasArrows ? (
               <View style={styles.selectorRow}>
                 <MaterialCommunityIcons color="#C49A52" name="chevron-left" size={26} />
@@ -300,7 +270,7 @@ export function RoomScreen({ navigation, route }: Props) {
               <MaterialCommunityIcons color="#5D351C" name={barConfig.center.iconName} size={38} />
             )}
             <Text style={styles.barLabel}>{barConfig.center.label}</Text>
-          </View>
+          </Pressable>
 
           <View style={styles.barSlot}>
             <MaterialCommunityIcons color="#8A5428" name={barConfig.right.iconName} size={30} />
@@ -309,7 +279,7 @@ export function RoomScreen({ navigation, route }: Props) {
         </View>
 
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -362,8 +332,7 @@ const styles = StyleSheet.create({
   spriteArea: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: 4
+    justifyContent: "center",
   },
   spriteContainer: {
     width: SPRITE_WIDTH,
@@ -392,8 +361,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center"
   },
-  actionRow: {
-    paddingBottom: 6
+  pressed: {
+    opacity: 0.72
   },
   roomBar: {
     flexDirection: "row",

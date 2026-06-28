@@ -104,7 +104,7 @@ export function MiniGamesScreen({ navigation }: Props) {
           <GameBottomNav
             active="games"
             onGames={() => navigation.navigate("MiniGames")}
-            onHome={() => navigation.navigate("Game")}
+            onHome={() => navigation.navigate("Kitchen")}
             onProfile={() => navigation.navigate("Profile")}
             onShop={() => navigation.navigate("Shop")}
           />

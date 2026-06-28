@@ -5,11 +5,10 @@ import { RoomName } from "../types/game";
 
 export type PageInfo = {
   label: string;
-  room: RoomName | null;
+  room: RoomName;
 };
 
 export const ROOM_PAGES: PageInfo[] = [
-  { label: "Início",    room: null       },
   { label: "Alimentar", room: "Kitchen"  },
   { label: "Brincar",   room: "Garden"   },
   { label: "Dormir",    room: "Bedroom"  },
@@ -103,10 +102,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#5D351C"
   },
   label: {
-    color: "#5D351C",
+    color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "900",
     marginTop: 5,
-    textAlign: "center"
+    textAlign: "center",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    textShadowColor: "rgba(0, 0, 0, 0.9)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8
   }
 });

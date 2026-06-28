@@ -7,7 +7,6 @@ export const capyBody = {
   cesta:    require("../../assets/images/capy-body-cesta.png"),
   pipoca:   require("../../assets/images/capy-body-pipoca.png"),
   sad:      require("../../assets/images/capy-body-sad.png"),
-  sleepHat: require("../../assets/images/capy-body-sleep-hat.png"),
 } as const;
 
 export const capyEyes = {

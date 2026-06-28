@@ -22,7 +22,7 @@ const moodText: Record<CapybaraMood, string> = {
 };
 
 const sceneImages: Record<CapybaraScene, ImageSourcePropType> = {
-  home: require("../../assets/images/capybara-hero.png"),
+  home: require("../../assets/images/capybara-lobby-cartoon.png"),
   kitchen: require("../../assets/images/capybara-kitchen.png"),
   bathroom: require("../../assets/images/capybara-bathroom.png"),
   garden: require("../../assets/images/capybara-lobby-cartoon.png"),

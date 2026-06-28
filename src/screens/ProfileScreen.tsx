@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { GameBottomNav } from "../components/GameBottomNav";
 import { RootStackParamList } from "../types/game";
 
-const capybaraHero = require("../../assets/images/capybara-hero.png");
+const capybaraHero = require("../../assets/images/capybara-lobby-cartoon.png");
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 
@@ -100,7 +100,7 @@ export function ProfileScreen({ navigation }: Props) {
           <GameBottomNav
             active="profile"
             onGames={() => navigation.navigate("MiniGames")}
-            onHome={() => navigation.navigate("Game")}
+            onHome={() => navigation.navigate("Kitchen")}
             onProfile={() => navigation.navigate("Profile")}
             onShop={() => navigation.navigate("Shop")}
           />
