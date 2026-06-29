@@ -3,6 +3,7 @@ import {
   Animated,
   Image,
   ImageSourcePropType,
+  Modal,
   PanResponder,
   Pressable,
   SafeAreaView,
@@ -15,9 +16,10 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { AccessoryLayer } from "../components/AccessoryLayer";
+import { KitchenFood } from "../components/KitchenFood";
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
 import { TopBar } from "../components/TopBar";
-import { capyBody, capyEyes, capyMouth, overlayAssets, roomBackgrounds, shopAssets } from "../assets/capySprites";
+import { ballAssets, capyBody, capyEyes, capyMouth, closetAssets, fridgeAsset, helpIcon, joystickAsset, lampAssets, overlayAssets, roomBackgrounds, shopAssets, soapAssets, uiAssets } from "../assets/capySprites";
 import { loadGameStatus, saveGameStatus, saveLastRoom } from "../storage/gameStorage";
 import {
   CapybaraMood,
@@ -29,6 +31,7 @@ import {
 import {
   actionMessages,
   applyCareAction,
+  applyLampToggle,
   getCapybaraMood,
   initialStatus
 } from "../utils/statusRules";
@@ -45,6 +48,8 @@ type RoomConfig = {
 type BarItem = {
   iconName: keyof typeof MaterialCommunityIcons.glyphMap;
   label: string;
+  image?: ImageSourcePropType;
+  backgroundImage?: ImageSourcePropType;
 };
 
 type RoomBottomBarConfig = {
@@ -61,6 +66,17 @@ type ActionCost = {
 };
 
 const COMPACT_BAR_HEIGHT = 44;
+const CRITICAL_THRESHOLD = 10;
+const WARNING_THRESHOLD = 25;
+
+function getStatusFillColor(value: number): string {
+  if (value <= CRITICAL_THRESHOLD) return "#E94B61";
+  if (value <= WARNING_THRESHOLD)  return "#E94B61";
+  if (value <= 50)                 return "#FFC107";
+  if (value <= 75)                 return "#9BC43A";
+  return "#4CAF50";
+}
+
 
 const SPRITE_WIDTH = 220;
 const SPRITE_HEIGHT = 330;
@@ -70,9 +86,10 @@ const SPONGE_SIZE = 54;
 const SPONGE_TOUCH_RADIUS = 34;
 
 const actionCosts: Record<CareAction, ActionCost[]> = {
-  feed: [{ key: "hygiene", label: "higiene" }],
-  bath: [{ key: "energy", label: "energia" }],
-  sleep: [{ key: "hunger", label: "fome" }]
+  feed:  [{ key: "hygiene", label: "higiene" }],
+  bath:  [{ key: "energy",  label: "energia" }],
+  sleep: [{ key: "hunger",  label: "fome" }],
+  play:  [{ key: "energy",  label: "energia" }]
 };
 
 const dirtSpots = [
@@ -119,6 +136,7 @@ const roomConfigs: Record<RoomName, RoomConfig> = {
   },
   Garden:   {
     background:  roomBackgrounds.garden,
+    action:      "play",
     actionLabel: "Brincar",
     icon:        "🏖️"
   },
@@ -132,22 +150,22 @@ const roomConfigs: Record<RoomName, RoomConfig> = {
 
 const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
   Kitchen:  {
-    left:   { iconName: "fridge",              label: "Geladeira"                  },
+    left:   { iconName: "fridge",              label: "Geladeira", image: fridgeAsset },
     center: { iconName: "food-apple",         label: "Alimentar", hasArrows: false },
     right:  { label: "Loja" }
   },
   Bathroom: {
-    left:   { iconName: "shower-head",        label: "Chuveiro"                   },
-    center: { iconName: "hand-wash",          label: "Sabão",    hasArrows: false },
+    left:   { iconName: "shower-head",        label: "Chuveiro", image: soapAssets.chuveiro },
+    center: { iconName: "hand-wash",          label: "Sabão",    hasArrows: false, image: soapAssets.sabao },
     right:  { label: "Loja" }
   },
   Garden:   {
-    left:   { iconName: "controller-classic", label: "Mini-jogos"                 },
-    center: { iconName: "controller-classic", label: "Brincar",  hasArrows: false },
+    left:   { iconName: "controller-classic", label: "Mini-jogos", image: joystickAsset },
+    center: { iconName: "controller-classic", label: "Brincar",    hasArrows: false, image: ballAssets.red },
     right:  { label: "Loja" }
   },
   Bedroom:  {
-    left:   { iconName: "wardrobe",           label: "Guarda-roupa"               },
+    left:   { iconName: "wardrobe",           label: "Guarda-roupa", image: closetAssets.closet },
     center: { iconName: "floor-lamp",         label: "Abajur",   hasArrows: false },
     right:  { label: "Loja" }
   }
@@ -179,6 +197,12 @@ export function RoomScreen({ navigation, route }: Props) {
   const statusRef = useRef<CapybaraStatus>(initialStatus);
   const visibleDirtIdsRef = useRef<DirtSpotId[]>([]);
   const isCleaningRef = useRef(false);
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+  const spriteContainerRef = useRef<View>(null);
+  const [mouthCenter, setMouthCenter] = useState({ x: 0, y: 0 });
+  const [eatingPhase, setEatingPhase] = useState<"idle" | "eating" | "happy">("idle");
+  const eatingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showFoodHelp, setShowFoodHelp] = useState(false);
   const config = roomConfigs[route.name];
   const barConfig = roomBarConfigs[route.name];
   const face = ROOM_FACE[route.name];
@@ -190,7 +214,14 @@ export function RoomScreen({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      loadGameStatus().then(setStatus);
+      loadGameStatus().then((loaded) => {
+        setStatus(loaded);
+        if (!loaded.lightOn && route.name !== "Bedroom") {
+          setMessage("A Capy está dormindo! Vá ao quarto e acenda a luz para acordá-la. 🌙");
+        } else {
+          setMessage("");
+        }
+      });
       saveLastRoom(route.name);
       setShowSleepAnimation(false);
       setIsCleaning(false);
@@ -215,6 +246,17 @@ export function RoomScreen({ navigation, route }: Props) {
       setShowSleepAnimation(false);
     }
   }, [route.name]);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(blinkAnim, { toValue: 0.2, duration: 500, useNativeDriver: true }),
+        Animated.timing(blinkAnim, { toValue: 1,   duration: 500, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [blinkAnim]);
 
   useEffect(() => {
     if (status.hygiene <= LOW_STATUS_THRESHOLD) {
@@ -369,9 +411,36 @@ export function RoomScreen({ navigation, route }: Props) {
     })
   ).current;
 
+  function handleEat() {
+    if (eatingTimerRef.current) clearTimeout(eatingTimerRef.current);
+    const updated = applyCareAction(status, "feed");
+    setStatus(updated);
+    saveGameStatus(updated);
+    setEatingPhase("eating");
+    eatingTimerRef.current = setTimeout(() => {
+      setEatingPhase("happy");
+      eatingTimerRef.current = setTimeout(() => {
+        setEatingPhase("idle");
+        setMessage("A Capy adorou a comida!");
+      }, 800);
+    }, 500);
+  }
+
+  function handleLampToggle() {
+    const updated = applyLampToggle(status);
+    setStatus(updated);
+    setMessage(updated.lightOn ? "Bom dia! A Capy acordou!" : "Boa noite! A Capy foi dormir!");
+    saveGameStatus(updated);
+  }
+
   function handleCareAction() {
-    if (!config.action) {
-      navigation.navigate("MiniGames");
+    if (route.name === "Bedroom") {
+      handleLampToggle();
+      return;
+    }
+
+    if (!status.lightOn) {
+      setMessage("A Capy está dormindo! Vá ao quarto e acenda a luz para acordá-la. 🌙");
       return;
     }
 
@@ -380,25 +449,28 @@ export function RoomScreen({ navigation, route }: Props) {
       return;
     }
 
-    const blockedMessage = getBlockedActionMessage(config.action);
+    const action = config.action;
+    if (!action) return;
+
+    const blockedMessage = getBlockedActionMessage(action);
     if (blockedMessage) {
       setMessage(blockedMessage);
       setShowSleepAnimation(false);
       return;
     }
 
-    const updatedStatus = applyCareAction(status, config.action);
+    const updatedStatus = applyCareAction(status, action);
     setStatus(updatedStatus);
-    setMessage(actionMessages[config.action]);
-    setShowSleepAnimation(config.action === "sleep");
+    setMessage(actionMessages[action]);
+    setShowSleepAnimation(action === "sleep");
     saveGameStatus(updatedStatus);
   }
 
   const statusBars = [
-    { iconName: "carrot" as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F47B2D", label: "Fome",    value: status.hunger,    fillColor: "#8BBB31", warning: "Com fome" },
-    { iconName: "heart"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#E94B61", label: "Alegria", value: status.happiness, fillColor: "#F06292", warning: "Tristinha" },
-    { iconName: "flash"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F28F2E", label: "Energia", value: status.energy,    fillColor: "#FFC107", warning: "Cansada" },
-    { iconName: "water"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#45BADA", label: "Higiene", value: status.hygiene,   fillColor: "#45BADA", warning: "Suja" },
+    { iconName: "carrot" as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F47B2D", label: "Fome",    value: status.hunger,    warning: "Com fome" },
+    { iconName: "heart"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#E94B61", label: "Alegria", value: status.happiness, warning: "Tristinha" },
+    { iconName: "flash"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F28F2E", label: "Energia", value: status.energy,    warning: "Cansada" },
+    { iconName: "water"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#45BADA", label: "Higiene", value: status.hygiene,   warning: "Suja" },
   ];
 
   return (
@@ -408,6 +480,9 @@ export function RoomScreen({ navigation, route }: Props) {
         source={config.background}
         style={StyleSheet.absoluteFillObject}
       />
+      {route.name === "Bedroom" && !status.lightOn ? (
+        <View style={styles.darkOverlay} />
+      ) : null}
       <SafeAreaView style={styles.safeArea}>
 
         {/* Barra superior: moedas à esquerda, perfil à direita */}
@@ -416,19 +491,20 @@ export function RoomScreen({ navigation, route }: Props) {
         {/* Barras de status flutuantes */}
         <View style={styles.statusBarsRow}>
           {statusBars.map((bar) => {
-            const isLow = bar.value <= LOW_STATUS_THRESHOLD;
-            const fillColor = isLow ? "#E94B61" : bar.fillColor;
+            const isCritical = bar.value <= CRITICAL_THRESHOLD;
+            const isWarning  = bar.value <= WARNING_THRESHOLD;
+            const fillColor  = getStatusFillColor(bar.value);
             const fillHeight = (bar.value / 100) * COMPACT_BAR_HEIGHT;
+            const fillStyle  = [styles.vBarFill, { height: fillHeight, backgroundColor: fillColor }];
             return (
               <View key={bar.label} style={styles.vBarWidget}>
                 <MaterialCommunityIcons color={bar.iconColor} name={bar.iconName} size={18} />
-                <View style={[styles.statusWarningBubble, !isLow && styles.hiddenStatusWarning]}>
-                  <Text style={styles.statusWarningText}>
-                    {bar.value <= 0 ? "Zerou" : bar.warning}
-                  </Text>
-                </View>
                 <View style={styles.vBarTrack}>
-                  <View style={[styles.vBarFill, { height: fillHeight, backgroundColor: fillColor }]} />
+                  {isCritical ? (
+                    <Animated.View style={[...fillStyle, { opacity: blinkAnim }]} />
+                  ) : (
+                    <View style={fillStyle} />
+                  )}
                 </View>
                 <Text style={styles.vBarLabel}>{bar.label}</Text>
               </View>
@@ -437,16 +513,53 @@ export function RoomScreen({ navigation, route }: Props) {
         </View>
 
         {/* Paginação de cômodos */}
-        <PageNav
-          currentPage={pageIndex}
-          onPrev={prevPage ? handlePrev : undefined}
-          onNext={nextPage ? handleNext : undefined}
-        />
+        <View>
+          <PageNav
+            currentPage={pageIndex}
+            onPrev={prevPage ? handlePrev : undefined}
+            onNext={nextPage ? handleNext : undefined}
+          />
+          {route.name === "Kitchen" ? (
+            <Pressable onPress={() => setShowFoodHelp(true)} style={styles.helpNavBtn}>
+              <MaterialCommunityIcons name="help-circle-outline" size={44} color="#FFFFFF" />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {route.name === "Kitchen" ? (
+          <>
+            <Modal visible={showFoodHelp} transparent animationType="fade">
+              <View style={styles.helpOverlay}>
+                <View style={styles.helpCard}>
+                  <Text style={styles.helpCardTitle}>Como alimentar a Capy?</Text>
+                  <Text style={styles.helpCardText}>
+                    Pressione e arraste o alimento até a{"\n"}
+                    <Text style={styles.helpCardBold}>boca da Capy</Text> para ela comer!
+                    {"\n\n"}
+                    Use as setas {"<"} {">"} para trocar o alimento.
+                  </Text>
+                  <Pressable onPress={() => setShowFoodHelp(false)} style={styles.helpCardBtn}>
+                    <Text style={styles.helpCardBtnText}>Entendi!</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </Modal>
+          </>
+        ) : null}
 
         {/* Capy composta por camadas */}
         <View style={styles.spriteArea}>
           <View
+            ref={spriteContainerRef}
             style={styles.spriteContainer}
+            onLayout={() => {
+              spriteContainerRef.current?.measure((_x, _y, _w, _h, pageX, pageY) => {
+                setMouthCenter({
+                  x: pageX + face.mouthLeft + face.mouthW / 2,
+                  y: pageY + face.mouthTop + face.mouthH / 2,
+                });
+              });
+            }}
             {...cleaningPanResponder.panHandlers}
           >
             <Image
@@ -456,19 +569,24 @@ export function RoomScreen({ navigation, route }: Props) {
             />
             <Image
               resizeMode="contain"
-              source={getEyeSprite(mood)}
+              source={!status.lightOn ? capyEyes.closed : eatingPhase === "eating" ? capyEyes.closed : getEyeSprite(mood)}
               style={[styles.absoluteLayer, { top: face.eyeTop, left: face.eyeLeft, width: face.eyeW, height: face.eyeH }]}
             />
             <Image
               resizeMode="contain"
-              source={getMouthSprite(mood)}
+              source={
+                !status.lightOn ? capyMouth.faceTired
+                : eatingPhase === "eating" ? capyMouth.uau
+                : eatingPhase === "happy"  ? capyMouth.veryHappy
+                : getMouthSprite(mood)
+              }
               style={[styles.absoluteLayer, { top: face.mouthTop, left: face.mouthLeft, width: face.mouthW, height: face.mouthH }]}
             />
             <DirtLayer
               visibleDirtIds={visibleDirtIds}
             />
             <AccessoryLayer accessoryId={status.equippedAccessory} />
-            {showSleepAnimation && route.name === "Bedroom" ? <SleepBubbles /> : null}
+            {!status.lightOn && route.name === "Bedroom" ? <SleepBubbles /> : null}
             {isCleaning && route.name === "Bathroom" ? (
               <BathSponge position={spongePosition} />
             ) : null}
@@ -484,28 +602,71 @@ export function RoomScreen({ navigation, route }: Props) {
 
         {/* Barra inferior do cômodo */}
         <View style={styles.roomBar}>
-          <View style={styles.barSlot}>
-            <MaterialCommunityIcons color="#8A5428" name={barConfig.left.iconName} size={30} />
-            <Text style={styles.barLabel}>{barConfig.left.label}</Text>
-          </View>
+          <Pressable
+            accessibilityLabel={barConfig.left.label}
+            accessibilityRole="button"
+            onPress={route.name === "Garden" ? () => navigation.navigate("MiniGames") : undefined}
+            style={({ pressed }) => [styles.barSlot, pressed && route.name === "Garden" && styles.pressed]}
+          >
+            {barConfig.left.image ? (
+              <View style={styles.centerActionIcon}>
+                <Image source={barConfig.left.image} style={styles.centerActionIconAbsolute} resizeMode="contain" />
+              </View>
+            ) : (
+              <>
+                <MaterialCommunityIcons color="#8A5428" name={barConfig.left.iconName} size={44} />
+                <Text style={styles.barLabel}>{barConfig.left.label}</Text>
+              </>
+            )}
+          </Pressable>
 
+          {route.name === "Kitchen" ? (
+            <View style={[styles.barSlot, styles.barSlotCenter, { marginTop: -5 }]}>
+              <KitchenFood
+                mouthCenterX={mouthCenter.x}
+                mouthCenterY={mouthCenter.y}
+                onEat={handleEat}
+              />
+            </View>
+          ) : (
           <Pressable
             accessibilityLabel={config.actionLabel}
             accessibilityRole="button"
             onPress={handleCareAction}
-            style={({ pressed }) => [styles.barSlot, styles.barSlotCenter, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.barSlot, styles.barSlotCenter, pressed ? styles.pressed : undefined]}
           >
             {barConfig.center.hasArrows ? (
               <View style={styles.selectorRow}>
                 <MaterialCommunityIcons color="#C49A52" name="chevron-left" size={26} />
-                <MaterialCommunityIcons color="#5D351C" name={barConfig.center.iconName} size={36} />
+                <MaterialCommunityIcons color="#5D351C" name={barConfig.center.iconName} size={44} />
                 <MaterialCommunityIcons color="#C49A52" name="chevron-right" size={26} />
               </View>
+            ) : route.name === "Bedroom" ? (
+              <View style={styles.centerActionIcon}>
+                <Image source={lampAssets.red} style={styles.centerActionIconAbsolute} resizeMode="contain" />
+                <Image
+                  source={status.lightOn ? lampAssets.on : lampAssets.off}
+                  style={styles.centerActionIconAbsolute}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : barConfig.center.image ? (
+              <View style={styles.centerActionIcon}>
+                {barConfig.center.backgroundImage ? (
+                  <Image source={barConfig.center.backgroundImage} style={styles.centerActionIconAbsolute} resizeMode="contain" />
+                ) : null}
+                <Image
+                  source={barConfig.center.image}
+                  style={styles.centerActionIconInner}
+                  resizeMode="contain"
+                />
+              </View>
             ) : (
-              <MaterialCommunityIcons color="#5D351C" name={barConfig.center.iconName} size={38} />
+              <MaterialCommunityIcons color="#5D351C" name={barConfig.center.iconName} size={44} />
             )}
-            <Text style={styles.barLabel}>{barConfig.center.label}</Text>
+            {barConfig.center.image || route.name === "Bedroom" ? null : <Text style={styles.barLabel}>{barConfig.center.label}</Text>}
           </Pressable>
+          )}
 
           <Pressable
             accessibilityLabel="Loja"
@@ -691,6 +852,10 @@ const styles = StyleSheet.create({
   background: {
     flex: 1
   },
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 30, 0.55)"
+  },
   safeArea: {
     flex: 1,
     paddingHorizontal: 10,
@@ -750,11 +915,70 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   vBarLabel: {
-    color: "#4E2D17",
+    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "900",
     textAlign: "center",
-    textTransform: "uppercase"
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    textShadowColor: "#000000",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4
+  },
+  helpNavBtn: {
+    position: "absolute",
+    right: 10,
+    top: 0,
+    bottom: 20,
+    justifyContent: "center",
+    padding: 4,
+    zIndex: 20,
+  },
+  helpNavIcon: {
+    width: 34,
+    height: 34,
+  },
+  helpOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helpCard: {
+    backgroundColor: "#FFF8E7",
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: "#C49A52",
+    padding: 28,
+    marginHorizontal: 32,
+    alignItems: "center",
+    gap: 16,
+  },
+  helpCardTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#5D351C",
+    textAlign: "center",
+  },
+  helpCardText: {
+    fontSize: 18,
+    color: "#5D351C",
+    textAlign: "center",
+    lineHeight: 26,
+  },
+  helpCardBold: {
+    fontWeight: "900",
+  },
+  helpCardBtn: {
+    backgroundColor: "#8BBB31",
+    borderRadius: 16,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+  },
+  helpCardBtnText: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#FFFFFF",
   },
   spriteArea: {
     flex: 1,
@@ -804,20 +1028,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     paddingTop: 8,
-    paddingBottom: 4,
-    backgroundColor: "rgba(248, 230, 188, 0.92)",
-    borderTopWidth: 2,
-    borderTopColor: "#C1843C"
+    paddingBottom: 14,
+    backgroundColor: "transparent"
   },
   barSlot: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     height: 70,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 245, 217, 0.88)",
-    borderWidth: 2,
-    borderColor: "#A96325",
     gap: 4
   },
   barSlotCenter: {
@@ -838,6 +1056,22 @@ const styles = StyleSheet.create({
   shopIcon: {
     width: 80,
     height: 80
+  },
+  centerActionIcon: {
+    width: 80,
+    height: 80
+  },
+  centerActionIconAbsolute: {
+    position: "absolute",
+    width: 80,
+    height: 80
+  },
+  centerActionIconInner: {
+    position: "absolute",
+    width: 60,
+    height: 60,
+    top: 10,
+    left: 10
   },
   sleepLayer: {
     position: "absolute",

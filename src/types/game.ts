@@ -13,13 +13,14 @@ export type CapybaraStatus = {
   happiness: number;
   energy: number;
   hygiene: number;
+  lightOn: boolean;
   ownedAccessories: AccessoryId[];
   equippedAccessory: AccessoryId | null;
 };
 
 export type CapybaraMood = "feliz" | "normal" | "triste";
 
-export type CareAction = "feed" | "bath" | "sleep";
+export type CareAction = "feed" | "bath" | "sleep" | "play";
 
 export type RoomName = "Kitchen" | "Bathroom" | "Garden" | "Bedroom";
 

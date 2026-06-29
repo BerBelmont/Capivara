@@ -6,20 +6,23 @@ export const initialStatus: CapybaraStatus = {
   happiness: 70,
   energy: 70,
   hygiene: 70,
+  lightOn: true,
   ownedAccessories: [],
   equippedAccessory: null
 };
 
 const actionChanges: Record<CareAction, Partial<CapybaraStatus>> = {
-  feed: { hunger: 25, hygiene: -5 },
-  bath: { hygiene: 30, energy: -5 },
-  sleep: { energy: 30, hunger: -10 }
+  feed:  { hunger: 25, hygiene: -5 },
+  bath:  { hygiene: 30, energy: -5 },
+  sleep: { energy: 30, hunger: -10 },
+  play:  { happiness: 20, energy: -10 }
 };
 
 export const actionMessages: Record<CareAction, string> = {
-  feed: "A capivara comeu bem!",
-  bath: "A capivara ficou limpinha!",
-  sleep: "A capivara descansou um pouco!"
+  feed:  "A capivara comeu bem!",
+  bath:  "A capivara ficou limpinha!",
+  sleep: "A capivara descansou um pouco!",
+  play:  "A capivara adorou brincar!"
 };
 
 function keepInRange(value: number) {
@@ -40,6 +43,14 @@ export function applyCareAction(
     energy: keepInRange(status.energy + (changes.energy ?? 0)),
     hygiene: keepInRange(status.hygiene + (changes.hygiene ?? 0))
   };
+}
+
+export function applyLampToggle(status: CapybaraStatus): CapybaraStatus {
+  if (status.lightOn) {
+    const sleeping = applyCareAction(status, "sleep");
+    return { ...sleeping, lightOn: false };
+  }
+  return { ...status, lightOn: true };
 }
 
 export function addCoinsBonus(

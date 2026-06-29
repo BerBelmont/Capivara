@@ -106,7 +106,68 @@ export const araucariaAssets = {
 
 /** Assets da loja */
 export const shopAssets = {
-  shop: require("../../assets/images/shop/shop.png"),
+  shop: require("../../assets/images/shop/loja-icon.png"),
+} as const;
+
+/** Assets de sabão e banho */
+export const soapAssets = {
+  sabao:    require("../../assets/images/soaps/sabao-icon.png"),
+  chuveiro: require("../../assets/images/soaps/chuveiro-icon.png"),
+} as const;
+
+/** Assets de abajur/lâmpada do quarto */
+export const lampAssets = {
+  on:  require("../../assets/images/lamps/light-on.png"),
+  off: require("../../assets/images/lamps/light-off.png"),
+  red: require("../../assets/images/lamps/red.png"),
+} as const;
+
+/** Bolas para o jardim */
+export const ballAssets = {
+  red: require("../../assets/images/balls/100/red.png"),
+} as const;
+
+/** Ícone de joystick para mini-jogos */
+export const joystickAsset = require("../../assets/images/joystick.png");
+
+/** Ícone de geladeira para a cozinha */
+export const fridgeAsset = require("../../assets/images/food/fridge.png");
+
+/** Ícone de ajuda */
+export const helpIcon = require("../../assets/images/icons/help.png");
+
+/** Alimentos brasileiros para a cozinha */
+export const foodAssets = [
+  { name: "Maçã",            image: require("../../assets/images/food/apple.png") },
+  { name: "Banana",          image: require("../../assets/images/food/banana.png") },
+  { name: "Melancia",        image: require("../../assets/images/food/watermelon.png") },
+  { name: "Laranja",         image: require("../../assets/images/food/orange-fruit.png") },
+  { name: "Morango",         image: require("../../assets/images/food/strawberry.png") },
+  { name: "Manga",           image: require("../../assets/images/food/mango.png") },
+  { name: "Abacaxi",         image: require("../../assets/images/food/pineapple.png") },
+  { name: "Milho",           image: require("../../assets/images/food/corn.png") },
+  { name: "Cenoura",         image: require("../../assets/images/food/carrot.png") },
+  { name: "Ovo",             image: require("../../assets/images/food/egg.png") },
+  { name: "Frango",          image: require("../../assets/images/food/chicken-leg.png") },
+  { name: "Pizza",           image: require("../../assets/images/food/pizza.png") },
+  { name: "Hambúrguer",      image: require("../../assets/images/food/burger.png") },
+  { name: "Cachorro-quente", image: require("../../assets/images/food/hotdog.png") },
+  { name: "Batata Frita",    image: require("../../assets/images/food/fries.png") },
+  { name: "Biscoito",        image: require("../../assets/images/food/cookie.png") },
+  { name: "Bolo",            image: require("../../assets/images/food/chocolate-cake.png") },
+  { name: "Leite",           image: require("../../assets/images/food/milk.png") },
+  { name: "Suco",            image: require("../../assets/images/food/orange-juice.png") },
+  { name: "Água",            image: require("../../assets/images/food/water.png") },
+];
+
+/** Guarda-roupa do quarto */
+export const closetAssets = {
+  closet: require("../../assets/images/closets/closet.png"),
+} as const;
+
+/** Fundo de suporte para ícones sem moldura própria */
+export const uiAssets = {
+  iconSupport: require("../../assets/images/icon-support.png"),
 } as const;
 
 /** Acessórios compráveis (chapéus, etc.) */
