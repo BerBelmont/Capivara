@@ -14,7 +14,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
 import { TopBar } from "../components/TopBar";
-import { capyBody, capyEyes, capyMouth, roomBackgrounds } from "../assets/capySprites";
+import { capyBody, capyEyes, capyMouth, roomBackgrounds, shopAssets } from "../assets/capySprites";
 import { loadGameStatus, saveGameStatus, saveLastRoom } from "../storage/gameStorage";
 import {
   CapybaraMood,
@@ -47,7 +47,7 @@ type BarItem = {
 type RoomBottomBarConfig = {
   left: BarItem;
   center: BarItem & { hasArrows: boolean };
-  right: BarItem;
+  right: { label: string };
 };
 
 const COMPACT_BAR_HEIGHT = 44;
@@ -105,22 +105,22 @@ const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
   Kitchen:  {
     left:   { iconName: "fridge",              label: "Geladeira"                  },
     center: { iconName: "food-apple",         label: "Alimentar", hasArrows: false },
-    right:  { iconName: "store",              label: "Loja"                       }
+    right:  { label: "Loja" }
   },
   Bathroom: {
     left:   { iconName: "shower-head",        label: "Chuveiro"                   },
     center: { iconName: "hand-wash",          label: "Sabão",    hasArrows: false },
-    right:  { iconName: "store",              label: "Loja"                       }
+    right:  { label: "Loja" }
   },
   Garden:   {
     left:   { iconName: "controller-classic", label: "Mini-jogos"                 },
     center: { iconName: "soccer",             label: "Bola",     hasArrows: false },
-    right:  { iconName: "store",              label: "Loja"                       }
+    right:  { label: "Loja" }
   },
   Bedroom:  {
     left:   { iconName: "wardrobe",           label: "Guarda-roupa"               },
     center: { iconName: "floor-lamp",         label: "Abajur",   hasArrows: false },
-    right:  { iconName: "store",              label: "Loja"                       }
+    right:  { label: "Loja" }
   }
 };
 
@@ -272,10 +272,15 @@ export function RoomScreen({ navigation, route }: Props) {
             <Text style={styles.barLabel}>{barConfig.center.label}</Text>
           </Pressable>
 
-          <View style={styles.barSlot}>
-            <MaterialCommunityIcons color="#8A5428" name={barConfig.right.iconName} size={30} />
-            <Text style={styles.barLabel}>{barConfig.right.label}</Text>
-          </View>
+          <Pressable
+            accessibilityLabel="Loja"
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("Shop")}
+            style={({ pressed }) => [styles.barSlot, pressed && styles.pressed]}
+          >
+            <Image source={shopAssets.shop} style={styles.shopIcon} resizeMode="contain" />
+            <Text style={styles.barLabel}>Loja</Text>
+          </Pressable>
         </View>
 
       </SafeAreaView>
@@ -397,5 +402,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2
+  },
+  shopIcon: {
+    width: 40,
+    height: 40
   }
 });
