@@ -1,43 +1,61 @@
 import { useCallback, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { GameBottomNav } from "../components/GameBottomNav";
-import { loadGameStatus } from "../storage/gameStorage";
-import { CapybaraStatus, RootStackParamList } from "../types/game";
+import { accessoryItems } from "../data/accessories";
+import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
+import { AccessoryId, CapybaraStatus, RootStackParamList } from "../types/game";
 import { initialStatus } from "../utils/statusRules";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Shop">;
 
-const categories = ["Acessórios", "Comidas", "Decorações", "Especiais"];
-
-const shopItems: Array<{
-  iconName: keyof typeof MaterialCommunityIcons.glyphMap;
-  iconColor: string;
-  name: string;
-  price: number;
-}> = [
-  { iconName: "hat-fedora", iconColor: "#C98B42", name: "Chapéu de Palha", price: 200 },
-  { iconName: "glasses", iconColor: "#5D351C", name: "Óculos Redondo", price: 150 },
-  { iconName: "tshirt-crew", iconColor: "#5C9E38", name: "Cachecol", price: 180 },
-  { iconName: "hat-fedora", iconColor: "#8A4A28", name: "Boina", price: 160 },
-  { iconName: "leaf", iconColor: "#65A83E", name: "Tiara de Folhas", price: 150 },
-  { iconName: "headphones", iconColor: "#4B4B4B", name: "Fone de Ouvido", price: 200 },
-  { iconName: "lifebuoy", iconColor: "#E86C78", name: "Boia Flamingo", price: 250 },
-  { iconName: "rug", iconColor: "#A96325", name: "Tapete Capivara", price: 300 },
-  { iconName: "lamp", iconColor: "#7DA646", name: "Luminária Folha", price: 220 }
-];
+const categories = ["Acessorios", "Comidas", "Decoracoes", "Especiais"];
 
 export function ShopScreen({ navigation }: Props) {
   const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
+  const [message, setMessage] = useState("Toque em um card para comprar ou equipar.");
 
   useFocusEffect(
     useCallback(() => {
       loadGameStatus().then(setStatus);
     }, [])
   );
+
+  async function handleAccessoryPress(itemId: AccessoryId) {
+    const item = accessoryItems.find((accessory) => accessory.id === itemId);
+    if (!item) return;
+
+    const ownsItem = status.ownedAccessories.includes(item.id);
+    let nextStatus: CapybaraStatus;
+
+    if (!ownsItem) {
+      if (status.coins < item.price) {
+        setMessage("Moedas insuficientes para comprar este acessorio.");
+        return;
+      }
+
+      nextStatus = {
+        ...status,
+        coins: status.coins - item.price,
+        ownedAccessories: [...status.ownedAccessories, item.id],
+        equippedAccessory: item.id
+      };
+      setMessage(`${item.name} comprado e equipado.`);
+    } else {
+      const shouldUnequip = status.equippedAccessory === item.id;
+      nextStatus = {
+        ...status,
+        equippedAccessory: shouldUnequip ? null : item.id
+      };
+      setMessage(shouldUnequip ? `${item.name} desequipado.` : `${item.name} equipado.`);
+    }
+
+    setStatus(nextStatus);
+    await saveGameStatus(nextStatus);
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -81,27 +99,62 @@ export function ShopScreen({ navigation }: Props) {
             ))}
           </View>
 
+          <Text style={styles.message}>{message}</Text>
+
           <View style={styles.grid}>
-            {shopItems.map((item) => (
-              <Pressable
-                accessibilityRole="button"
-                key={item.name}
-                style={({ pressed }) => [styles.itemCard, pressed && styles.pressed]}
-              >
-                <View style={styles.itemArt}>
-                  <MaterialCommunityIcons
-                    color={item.iconColor}
-                    name={item.iconName}
-                    size={42}
-                  />
-                </View>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <View style={styles.priceRow}>
-                  <MaterialCommunityIcons color="#E6A135" name="gold" size={13} />
-                  <Text style={styles.price}>{item.price}</Text>
-                </View>
-              </Pressable>
-            ))}
+            {accessoryItems.map((item) => {
+              const ownsItem = status.ownedAccessories.includes(item.id);
+              const equipped = status.equippedAccessory === item.id;
+              const canBuy = status.coins >= item.price;
+
+              return (
+                <Pressable
+                  accessibilityLabel={`${item.name}, ${
+                    ownsItem ? (equipped ? "equipado" : "comprado") : `${item.price} moedas`
+                  }`}
+                  accessibilityRole="button"
+                  key={item.id}
+                  onPress={() => handleAccessoryPress(item.id)}
+                  style={({ pressed }) => [styles.itemCard, pressed && styles.pressed]}
+                >
+                  <View style={styles.itemArt}>
+                    {item.image ? (
+                      <Image source={item.image} style={styles.itemImage} resizeMode="contain" />
+                    ) : (
+                      <MaterialCommunityIcons
+                        color={item.iconColor}
+                        name={item.iconName}
+                        size={42}
+                      />
+                    )}
+                    {equipped ? (
+                      <View style={styles.equippedBadge}>
+                        <MaterialCommunityIcons color="#FFFFFF" name="check" size={15} />
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <Text style={styles.itemName}>{item.name}</Text>
+
+                  <View
+                    style={[
+                      styles.priceRow,
+                      ownsItem && styles.ownedPill,
+                      !ownsItem && !canBuy && styles.lockedPill
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      color={ownsItem ? "#FFFFFF" : "#E6A135"}
+                      name={ownsItem ? (equipped ? "check-circle" : "hanger") : "gold"}
+                      size={13}
+                    />
+                    <Text style={[styles.price, ownsItem && styles.ownedText]}>
+                      {ownsItem ? (equipped ? "Equipado" : "Usar") : item.price}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
 
           <GameBottomNav
@@ -214,7 +267,7 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: "row",
     gap: 6,
-    marginBottom: 10
+    marginBottom: 8
   },
   tab: {
     flex: 1,
@@ -239,6 +292,15 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: "#FFFFFF"
+  },
+  message: {
+    minHeight: 34,
+    color: "#6A3B1E",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    marginBottom: 8,
+    textAlign: "center"
   },
   grid: {
     flexDirection: "row",
@@ -270,6 +332,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFE9B7",
     marginBottom: 6
   },
+  itemImage: {
+    width: 54,
+    height: 48
+  },
+  equippedBadge: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    width: 22,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 11,
+    backgroundColor: "#67AF31",
+    borderWidth: 2,
+    borderColor: "#FFFFFF"
+  },
   itemName: {
     minHeight: 31,
     color: "#593419",
@@ -281,13 +360,25 @@ const styles = StyleSheet.create({
   priceRow: {
     alignItems: "center",
     flexDirection: "row",
-    marginTop: 2
+    borderRadius: 999,
+    marginTop: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3
+  },
+  ownedPill: {
+    backgroundColor: "#67AF31"
+  },
+  lockedPill: {
+    opacity: 0.55
   },
   price: {
     color: "#8A5428",
     fontSize: 12,
     fontWeight: "900",
     marginLeft: 3
+  },
+  ownedText: {
+    color: "#FFFFFF"
   },
   pressed: {
     opacity: 0.72

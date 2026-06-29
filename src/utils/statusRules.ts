@@ -5,20 +5,20 @@ export const initialStatus: CapybaraStatus = {
   hunger: 70,
   happiness: 70,
   energy: 70,
-  hygiene: 70
+  hygiene: 70,
+  ownedAccessories: [],
+  equippedAccessory: null
 };
 
 const actionChanges: Record<CareAction, Partial<CapybaraStatus>> = {
   feed: { hunger: 25, hygiene: -5 },
   bath: { hygiene: 30, energy: -5 },
-  play: { happiness: 20, energy: -15, hunger: -10 },
   sleep: { energy: 30, hunger: -10 }
 };
 
 export const actionMessages: Record<CareAction, string> = {
   feed: "A capivara comeu bem!",
   bath: "A capivara ficou limpinha!",
-  play: "A capivara ficou feliz!",
   sleep: "A capivara descansou um pouco!"
 };
 
@@ -34,7 +34,7 @@ export function applyCareAction(
   const changes = actionChanges[action];
 
   return {
-    coins: status.coins,
+    ...status,
     hunger: keepInRange(status.hunger + (changes.hunger ?? 0)),
     happiness: keepInRange(status.happiness + (changes.happiness ?? 0)),
     energy: keepInRange(status.energy + (changes.energy ?? 0)),

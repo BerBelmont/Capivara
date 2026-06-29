@@ -107,7 +107,7 @@ export const araucariaAssets = {
 /** Assets da loja e itens compráveis */
 export const shopAssets = {
   loja:     require("../../assets/images/shop/loja.png"),
-  shop:     require("../../assets/images/shop/shop.png"),
+  shop:     require("../../assets/images/shop/loja.png"),
   hatBoina: require("../../assets/images/shop/hat-boina.png"),
 } as const;
 
