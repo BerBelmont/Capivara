@@ -14,9 +14,15 @@ export async function loadGameStatus(): Promise<CapybaraStatus> {
   }
 
   try {
+    const parsedStatus = JSON.parse(storedStatus) as Partial<CapybaraStatus>;
+
     return {
       ...initialStatus,
-      ...(JSON.parse(storedStatus) as Partial<CapybaraStatus>)
+      ...parsedStatus,
+      ownedAccessories: Array.isArray(parsedStatus.ownedAccessories)
+        ? parsedStatus.ownedAccessories
+        : initialStatus.ownedAccessories,
+      equippedAccessory: parsedStatus.equippedAccessory ?? initialStatus.equippedAccessory
     };
   } catch {
     return initialStatus;

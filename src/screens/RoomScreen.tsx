@@ -1,7 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Image,
   ImageSourcePropType,
+  PanResponder,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -12,9 +14,10 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { AccessoryLayer } from "../components/AccessoryLayer";
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
 import { TopBar } from "../components/TopBar";
-import { capyBody, capyEyes, capyMouth, roomBackgrounds, shopAssets } from "../assets/capySprites";
+import { capyBody, capyEyes, capyMouth, overlayAssets, roomBackgrounds, shopAssets } from "../assets/capySprites";
 import { loadGameStatus, saveGameStatus, saveLastRoom } from "../storage/gameStorage";
 import {
   CapybaraMood,
@@ -34,7 +37,7 @@ type Props = NativeStackScreenProps<RootStackParamList, RoomName>;
 
 type RoomConfig = {
   background: ImageSourcePropType;
-  action: CareAction;
+  action?: CareAction;
   actionLabel: string;
   icon: string;
 };
@@ -50,10 +53,37 @@ type RoomBottomBarConfig = {
   right: { label: string };
 };
 
+type StatusKey = "hunger" | "happiness" | "energy" | "hygiene";
+
+type ActionCost = {
+  key: StatusKey;
+  label: string;
+};
+
 const COMPACT_BAR_HEIGHT = 44;
 
 const SPRITE_WIDTH = 220;
 const SPRITE_HEIGHT = 330;
+const BATH_HYGIENE_GAIN = 35;
+const LOW_STATUS_THRESHOLD = 30;
+const SPONGE_SIZE = 54;
+const SPONGE_TOUCH_RADIUS = 34;
+
+const actionCosts: Record<CareAction, ActionCost[]> = {
+  feed: [{ key: "hygiene", label: "higiene" }],
+  bath: [{ key: "energy", label: "energia" }],
+  sleep: [{ key: "hunger", label: "fome" }]
+};
+
+const dirtSpots = [
+  { id: "head", top: 82, left: 80, width: 48, height: 38, rotate: "-9deg" },
+  { id: "belly", top: 168, left: 92, width: 58, height: 46, rotate: "7deg" },
+  { id: "back", top: 142, left: 38, width: 48, height: 38, rotate: "12deg" },
+  { id: "leg", top: 238, left: 118, width: 50, height: 40, rotate: "-13deg" },
+  { id: "side", top: 202, left: 48, width: 44, height: 34, rotate: "5deg" }
+] as const;
+
+type DirtSpotId = (typeof dirtSpots)[number]["id"];
 
 // Posições das camadas de rosto sobrepostas ao corpo.
 // Cada cômodo pode sobrescrever os valores padrão individualmente.
@@ -89,7 +119,6 @@ const roomConfigs: Record<RoomName, RoomConfig> = {
   },
   Garden:   {
     background:  roomBackgrounds.garden,
-    action:      "play",
     actionLabel: "Brincar",
     icon:        "🏖️"
   },
@@ -114,7 +143,7 @@ const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
   },
   Garden:   {
     left:   { iconName: "controller-classic", label: "Mini-jogos"                 },
-    center: { iconName: "soccer",             label: "Bola",     hasArrows: false },
+    center: { iconName: "controller-classic", label: "Brincar",  hasArrows: false },
     right:  { label: "Loja" }
   },
   Bedroom:  {
@@ -143,6 +172,13 @@ function getMouthSprite(mood: CapybaraMood) {
 export function RoomScreen({ navigation, route }: Props) {
   const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
   const [message, setMessage] = useState("");
+  const [showSleepAnimation, setShowSleepAnimation] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
+  const [visibleDirtIds, setVisibleDirtIds] = useState<DirtSpotId[]>([]);
+  const [spongePosition, setSpongePosition] = useState({ x: 88, y: 138 });
+  const statusRef = useRef<CapybaraStatus>(initialStatus);
+  const visibleDirtIdsRef = useRef<DirtSpotId[]>([]);
+  const isCleaningRef = useRef(false);
   const config = roomConfigs[route.name];
   const barConfig = roomBarConfigs[route.name];
   const face = ROOM_FACE[route.name];
@@ -156,8 +192,49 @@ export function RoomScreen({ navigation, route }: Props) {
     useCallback(() => {
       loadGameStatus().then(setStatus);
       saveLastRoom(route.name);
+      setShowSleepAnimation(false);
+      setIsCleaning(false);
+      setSpongePosition({ x: 88, y: 138 });
     }, [route.name])
   );
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    visibleDirtIdsRef.current = visibleDirtIds;
+  }, [visibleDirtIds]);
+
+  useEffect(() => {
+    isCleaningRef.current = isCleaning;
+  }, [isCleaning]);
+
+  useEffect(() => {
+    if (route.name !== "Bedroom") {
+      setShowSleepAnimation(false);
+    }
+  }, [route.name]);
+
+  useEffect(() => {
+    if (status.hygiene <= LOW_STATUS_THRESHOLD) {
+      setVisibleDirtIds((current) => (
+        current.length > 0 ? current : dirtSpots.map((spot) => spot.id)
+      ));
+      return;
+    }
+
+    setVisibleDirtIds([]);
+    setIsCleaning(false);
+  }, [status.hygiene]);
+
+  function getSpongePositionForSpot(spotId: DirtSpotId | undefined) {
+    const spot = dirtSpots.find((item) => item.id === spotId) ?? dirtSpots[0];
+    return {
+      x: Math.min(SPRITE_WIDTH - SPONGE_SIZE, spot.left + spot.width - 18),
+      y: Math.max(0, spot.top - 10)
+    };
+  }
 
   function handlePrev() {
     if (!prevPage) return;
@@ -169,18 +246,159 @@ export function RoomScreen({ navigation, route }: Props) {
     navigation.replace(nextPage.room);
   }
 
+  function keepStatusValueInRange(value: number) {
+    return Math.min(100, Math.max(0, value));
+  }
+
+  function getBlockedActionMessage(action: CareAction) {
+    const blockedCost = actionCosts[action].find((cost) => status[cost.key] <= 0);
+    if (!blockedCost) return null;
+
+    return `Nao da para usar agora: ${blockedCost.label} esta zerada.`;
+  }
+
+  function handleBathAction() {
+    const blockedMessage = getBlockedActionMessage("bath");
+    if (blockedMessage) {
+      setMessage(blockedMessage);
+      return;
+    }
+
+    if (status.hygiene > LOW_STATUS_THRESHOLD && visibleDirtIds.length === 0) {
+      const updatedStatus = applyCareAction(status, "bath");
+      setStatus(updatedStatus);
+      setMessage(actionMessages.bath);
+      setShowSleepAnimation(false);
+      saveGameStatus(updatedStatus);
+      return;
+    }
+
+    const nextDirtIds = visibleDirtIds.length > 0
+      ? visibleDirtIds
+      : dirtSpots.map((spot) => spot.id);
+
+    setVisibleDirtIds(nextDirtIds);
+    setIsCleaning(true);
+    setSpongePosition(getSpongePositionForSpot(nextDirtIds[0]));
+    setMessage("Arraste a bucha por cima das sujeirinhas para limpar.");
+    setShowSleepAnimation(false);
+  }
+
+  function finishManualCleaning() {
+    const currentStatus = statusRef.current;
+    const cleanedStatus: CapybaraStatus = {
+      ...currentStatus,
+      energy: keepStatusValueInRange(currentStatus.energy - 5),
+      hygiene: keepStatusValueInRange(currentStatus.hygiene + BATH_HYGIENE_GAIN)
+    };
+
+    setStatus(cleanedStatus);
+    setIsCleaning(false);
+    setMessage(actionMessages.bath);
+    saveGameStatus(cleanedStatus);
+  }
+
+  function removeDirtSpot(spotId: DirtSpotId) {
+    if (!isCleaningRef.current) {
+      setMessage("Clique em Sabao para pegar a bucha primeiro.");
+      return;
+    }
+
+    const remainingDirt = visibleDirtIdsRef.current.filter((id) => id !== spotId);
+    visibleDirtIdsRef.current = remainingDirt;
+    setVisibleDirtIds(remainingDirt);
+
+    if (remainingDirt.length > 0) {
+      setMessage("Boa! Continue limpando as manchas.");
+      return;
+    }
+
+    finishManualCleaning();
+  }
+
+  function cleanDirtAtPosition(x: number, y: number) {
+    if (!isCleaningRef.current) return;
+
+    const spongeCenterX = x + SPONGE_SIZE / 2;
+    const spongeCenterY = y + SPONGE_SIZE / 2;
+    const touchedSpot = dirtSpots.find((spot) => {
+      if (!visibleDirtIdsRef.current.includes(spot.id)) return false;
+
+      const spotCenterX = spot.left + spot.width / 2;
+      const spotCenterY = spot.top + spot.height / 2;
+      const distance = Math.hypot(spongeCenterX - spotCenterX, spongeCenterY - spotCenterY);
+
+      return distance <= SPONGE_TOUCH_RADIUS;
+    });
+
+    if (touchedSpot) {
+      removeDirtSpot(touchedSpot.id);
+    }
+  }
+
+  const cleaningPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => isCleaningRef.current,
+      onMoveShouldSetPanResponder: () => isCleaningRef.current,
+      onPanResponderGrant: (event) => {
+        const x = Math.min(
+          SPRITE_WIDTH - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationX - SPONGE_SIZE / 2)
+        );
+        const y = Math.min(
+          SPRITE_HEIGHT - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationY - SPONGE_SIZE / 2)
+        );
+
+        setSpongePosition({ x, y });
+        cleanDirtAtPosition(x, y);
+      },
+      onPanResponderMove: (event) => {
+        const x = Math.min(
+          SPRITE_WIDTH - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationX - SPONGE_SIZE / 2)
+        );
+        const y = Math.min(
+          SPRITE_HEIGHT - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationY - SPONGE_SIZE / 2)
+        );
+
+        setSpongePosition({ x, y });
+        cleanDirtAtPosition(x, y);
+      }
+    })
+  ).current;
+
   function handleCareAction() {
+    if (!config.action) {
+      navigation.navigate("MiniGames");
+      return;
+    }
+
+    if (config.action === "bath") {
+      handleBathAction();
+      return;
+    }
+
+    const blockedMessage = getBlockedActionMessage(config.action);
+    if (blockedMessage) {
+      setMessage(blockedMessage);
+      setShowSleepAnimation(false);
+      return;
+    }
+
     const updatedStatus = applyCareAction(status, config.action);
     setStatus(updatedStatus);
     setMessage(actionMessages[config.action]);
+    setShowSleepAnimation(config.action === "sleep");
     saveGameStatus(updatedStatus);
   }
 
   const statusBars = [
-    { iconName: "carrot" as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F47B2D", label: "Fome",    value: status.hunger,    fillColor: "#8BBB31" },
-    { iconName: "heart"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#E94B61", label: "Alegria", value: status.happiness, fillColor: "#F06292" },
-    { iconName: "flash"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F28F2E", label: "Energia", value: status.energy,    fillColor: "#FFC107" },
-    { iconName: "water"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#45BADA", label: "Higiene", value: status.hygiene,   fillColor: "#45BADA" },
+    { iconName: "carrot" as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F47B2D", label: "Fome",    value: status.hunger,    fillColor: "#8BBB31", warning: "Com fome" },
+    { iconName: "heart"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#E94B61", label: "Alegria", value: status.happiness, fillColor: "#F06292", warning: "Tristinha" },
+    { iconName: "flash"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#F28F2E", label: "Energia", value: status.energy,    fillColor: "#FFC107", warning: "Cansada" },
+    { iconName: "water"  as keyof typeof MaterialCommunityIcons.glyphMap, iconColor: "#45BADA", label: "Higiene", value: status.hygiene,   fillColor: "#45BADA", warning: "Suja" },
   ];
 
   return (
@@ -198,11 +416,17 @@ export function RoomScreen({ navigation, route }: Props) {
         {/* Barras de status flutuantes */}
         <View style={styles.statusBarsRow}>
           {statusBars.map((bar) => {
-            const fillColor = bar.value < 30 ? "#E94B61" : bar.fillColor;
+            const isLow = bar.value <= LOW_STATUS_THRESHOLD;
+            const fillColor = isLow ? "#E94B61" : bar.fillColor;
             const fillHeight = (bar.value / 100) * COMPACT_BAR_HEIGHT;
             return (
               <View key={bar.label} style={styles.vBarWidget}>
                 <MaterialCommunityIcons color={bar.iconColor} name={bar.iconName} size={18} />
+                <View style={[styles.statusWarningBubble, !isLow && styles.hiddenStatusWarning]}>
+                  <Text style={styles.statusWarningText}>
+                    {bar.value <= 0 ? "Zerou" : bar.warning}
+                  </Text>
+                </View>
                 <View style={styles.vBarTrack}>
                   <View style={[styles.vBarFill, { height: fillHeight, backgroundColor: fillColor }]} />
                 </View>
@@ -221,7 +445,10 @@ export function RoomScreen({ navigation, route }: Props) {
 
         {/* Capy composta por camadas */}
         <View style={styles.spriteArea}>
-          <View style={styles.spriteContainer}>
+          <View
+            style={styles.spriteContainer}
+            {...cleaningPanResponder.panHandlers}
+          >
             <Image
               resizeMode="contain"
               source={getBodySprite(mood, route.name)}
@@ -237,15 +464,23 @@ export function RoomScreen({ navigation, route }: Props) {
               source={getMouthSprite(mood)}
               style={[styles.absoluteLayer, { top: face.mouthTop, left: face.mouthLeft, width: face.mouthW, height: face.mouthH }]}
             />
+            <DirtLayer
+              visibleDirtIds={visibleDirtIds}
+            />
+            <AccessoryLayer accessoryId={status.equippedAccessory} />
+            {showSleepAnimation && route.name === "Bedroom" ? <SleepBubbles /> : null}
+            {isCleaning && route.name === "Bathroom" ? (
+              <BathSponge position={spongePosition} />
+            ) : null}
           </View>
         </View>
 
         {/* Mensagem de feedback */}
-        {message ? (
-          <View style={styles.messageBubble}>
+        <View style={styles.messageArea}>
+          <View style={[styles.messageBubble, !message && styles.hiddenMessageBubble]}>
             <Text style={styles.messageText}>{message}</Text>
           </View>
-        ) : null}
+        </View>
 
         {/* Barra inferior do cômodo */}
         <View style={styles.roomBar}>
@@ -287,6 +522,171 @@ export function RoomScreen({ navigation, route }: Props) {
   );
 }
 
+function SleepBubbles() {
+  const bubbleOne = useRef(new Animated.Value(0)).current;
+  const bubbleTwo = useRef(new Animated.Value(0)).current;
+  const bubbleThree = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    function makeLoop(value: Animated.Value, delay: number) {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(value, {
+            toValue: 1,
+            duration: 2100,
+            useNativeDriver: true
+          }),
+          Animated.timing(value, {
+            toValue: 0,
+            duration: 1,
+            useNativeDriver: true
+          })
+        ])
+      );
+    }
+
+    const loops = [
+      makeLoop(bubbleOne, 0),
+      makeLoop(bubbleTwo, 360),
+      makeLoop(bubbleThree, 720)
+    ];
+
+    loops.forEach((loop) => loop.start());
+    return () => loops.forEach((loop) => loop.stop());
+  }, [bubbleOne, bubbleTwo, bubbleThree]);
+
+  const bubbles = [
+    { value: bubbleOne, label: "Z", style: styles.sleepBubbleLarge },
+    { value: bubbleTwo, label: "z", style: styles.sleepBubbleMedium },
+    { value: bubbleThree, label: "z", style: styles.sleepBubbleSmall }
+  ];
+
+  return (
+    <View pointerEvents="none" style={styles.sleepLayer}>
+      {bubbles.map((bubble, index) => {
+        const translateY = bubble.value.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -76]
+        });
+        const translateX = bubble.value.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 42]
+        });
+        const opacity = bubble.value.interpolate({
+          inputRange: [0, 0.2, 0.72, 1],
+          outputRange: [0, 0.88, 0.7, 0]
+        });
+        const scale = bubble.value.interpolate({
+          inputRange: [0, 0.45, 0.8, 1],
+          outputRange: [0.74, 1.08, 0.94, 0.65]
+        });
+
+        return (
+          <Animated.View
+            key={`${bubble.label}-${index}`}
+            style={[
+              styles.sleepBubble,
+              bubble.style,
+              {
+                opacity,
+                transform: [{ translateX }, { translateY }, { scale }]
+              }
+            ]}
+          >
+            <Text style={styles.sleepText}>{bubble.label}</Text>
+          </Animated.View>
+        );
+      })}
+    </View>
+  );
+}
+
+function DirtLayer({
+  visibleDirtIds
+}: {
+  visibleDirtIds: DirtSpotId[];
+}) {
+  if (visibleDirtIds.length === 0) return null;
+
+  return (
+    <View pointerEvents="box-none" style={styles.dirtLayer}>
+      {dirtSpots
+        .filter((spot) => visibleDirtIds.includes(spot.id))
+        .map((spot) => (
+          <View
+            key={spot.id}
+            style={[
+              styles.dirtSpot,
+              {
+                top: spot.top,
+                left: spot.left,
+                width: spot.width,
+                height: spot.height,
+                transform: [{ rotate: spot.rotate }]
+              }
+            ]}
+          >
+            <Image
+              resizeMode="cover"
+              source={overlayAssets.dirtSplats}
+              style={styles.dirtImage}
+            />
+          </View>
+        ))}
+    </View>
+  );
+}
+
+function BathSponge({ position }: { position: { x: number; y: number } }) {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 420,
+          useNativeDriver: true
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 420,
+          useNativeDriver: true
+        })
+      ])
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  const scale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.92, 1.08]
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.sponge,
+        {
+          top: position.y,
+          left: position.x,
+          transform: [{ rotate: "-12deg" }, { scale }]
+        }
+      ]}
+    >
+      <View style={styles.spongeFoamOne} />
+      <View style={styles.spongeFoamTwo} />
+      <View style={styles.spongeHoleOne} />
+      <View style={styles.spongeHoleTwo} />
+      <View style={styles.spongeHoleThree} />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   background: {
     flex: 1
@@ -306,13 +706,35 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "rgba(169, 99, 37, 0.45)",
     paddingHorizontal: 8,
-    paddingTop: 8,
+    paddingTop: 7,
     paddingBottom: 6,
     marginBottom: 6
   },
   vBarWidget: {
     alignItems: "center",
+    width: 72,
     gap: 3
+  },
+  statusWarningBubble: {
+    minWidth: 56,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 11,
+    backgroundColor: "rgba(255, 248, 231, 0.96)",
+    borderWidth: 1.5,
+    borderColor: "#E94B61",
+    paddingHorizontal: 6
+  },
+  hiddenStatusWarning: {
+    opacity: 0,
+    borderColor: "transparent"
+  },
+  statusWarningText: {
+    color: "#8D2435",
+    fontSize: 9,
+    fontWeight: "900",
+    textAlign: "center"
   },
   vBarTrack: {
     width: 22,
@@ -337,11 +759,12 @@ const styles = StyleSheet.create({
   spriteArea: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center"
   },
   spriteContainer: {
     width: SPRITE_WIDTH,
-    height: SPRITE_HEIGHT
+    height: SPRITE_HEIGHT,
+    flexShrink: 0
   },
   spriteBase: {
     width: SPRITE_WIDTH,
@@ -350,6 +773,12 @@ const styles = StyleSheet.create({
   absoluteLayer: {
     position: "absolute"
   },
+  messageArea: {
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6
+  },
   messageBubble: {
     alignSelf: "center",
     backgroundColor: "rgba(255, 245, 217, 0.92)",
@@ -357,8 +786,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#C49A52",
     paddingHorizontal: 18,
-    paddingVertical: 6,
-    marginBottom: 6
+    paddingVertical: 6
+  },
+  hiddenMessageBubble: {
+    opacity: 0
   },
   messageText: {
     color: "#5B3318",
@@ -407,5 +838,120 @@ const styles = StyleSheet.create({
   shopIcon: {
     width: 80,
     height: 80
+  },
+  sleepLayer: {
+    position: "absolute",
+    top: 4,
+    left: 118,
+    width: 110,
+    height: 120,
+    zIndex: 10
+  },
+  sleepBubble: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 250, 232, 0.86)",
+    borderWidth: 1.5,
+    borderColor: "rgba(177, 130, 68, 0.38)"
+  },
+  sleepBubbleLarge: {
+    left: 0,
+    bottom: 6,
+    width: 42,
+    height: 42
+  },
+  sleepBubbleMedium: {
+    left: 28,
+    bottom: 22,
+    width: 34,
+    height: 34
+  },
+  sleepBubbleSmall: {
+    left: 54,
+    bottom: 38,
+    width: 28,
+    height: 28
+  },
+  sleepText: {
+    color: "#6A4A82",
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  dirtLayer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: SPRITE_WIDTH,
+    height: SPRITE_HEIGHT,
+    zIndex: 4
+  },
+  dirtSpot: {
+    position: "absolute",
+    overflow: "hidden",
+    borderRadius: 999
+  },
+  dirtImage: {
+    width: "100%",
+    height: "100%",
+    opacity: 0.88
+  },
+  sponge: {
+    position: "absolute",
+    zIndex: 12,
+    width: 54,
+    height: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 18,
+    backgroundColor: "#FFE08A",
+    borderWidth: 3,
+    borderColor: "#C9943A"
+  },
+  spongeFoamOne: {
+    position: "absolute",
+    top: -14,
+    right: -8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(255, 255, 255, 0.86)"
+  },
+  spongeFoamTwo: {
+    position: "absolute",
+    top: 2,
+    right: -16,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: "rgba(255, 255, 255, 0.78)"
+  },
+  spongeHoleOne: {
+    position: "absolute",
+    left: 12,
+    top: 13,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#D89F3B"
+  },
+  spongeHoleTwo: {
+    position: "absolute",
+    right: 13,
+    top: 19,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#D89F3B"
+  },
+  spongeHoleThree: {
+    position: "absolute",
+    left: 22,
+    bottom: 12,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: "#D89F3B"
   }
 });

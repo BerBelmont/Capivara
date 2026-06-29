@@ -111,7 +111,7 @@ export const shopAssets = {
 
 /** Acessórios compráveis (chapéus, etc.) */
 export const hatAssets = {
-  boina: require("../../assets/images/hats/hat-boina.png"),
+  boina: require("../../assets/images/hats/boinas/hat-boina.png"),
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -121,4 +121,13 @@ export const hatAssets = {
 /** Ícones de estado exibidos nos cômodos */
 export const statusIcons = {
   sleep: require("../../assets/images/icons/sleep-icon.png"),
+} as const;
+
+// -----------------------------------------------------------------------------
+// Overlays — efeitos aplicados por cima da Capy
+// -----------------------------------------------------------------------------
+
+/** Manchas de sujeira usadas na limpeza manual */
+export const overlayAssets = {
+  dirtSplats: require("../../assets/images/overlays/dirt-splats.png"),
 } as const;
