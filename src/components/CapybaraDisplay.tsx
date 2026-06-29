@@ -8,6 +8,7 @@ import {
 } from "react-native";
 
 import { CapybaraMood, CapybaraScene } from "../types/game";
+import { roomBackgrounds } from "../assets/capySprites";
 
 type CapybaraDisplayProps = {
   mood: CapybaraMood;
@@ -22,11 +23,11 @@ const moodText: Record<CapybaraMood, string> = {
 };
 
 const sceneImages: Record<CapybaraScene, ImageSourcePropType> = {
-  home: require("../../assets/images/capybara-lobby-cartoon.png"),
-  kitchen: require("../../assets/images/capybara-kitchen.png"),
-  bathroom: require("../../assets/images/capybara-bathroom.png"),
-  garden: require("../../assets/images/capybara-lobby-cartoon.png"),
-  bedroom: require("../../assets/images/capybara-bedroom.png")
+  home:     roomBackgrounds.home,
+  kitchen:  roomBackgrounds.kitchen,
+  bathroom: roomBackgrounds.bathroom,
+  garden:   roomBackgrounds.garden,
+  bedroom:  roomBackgrounds.bedroom,
 };
 
 export function CapybaraDisplay({

@@ -103,23 +103,41 @@ Cada cômodo tem:
 Não há mais `ActionButton` separado no corpo da tela — a ação fica exclusivamente
 no slot central da barra inferior.
 
-## Sistema de sprites da Capy (`src/assets/capySprites.ts`)
+## Sistema de assets (`src/assets/capySprites.ts`)
 
-A Capy é composta por camadas de imagens PNG transparentes sobrepostas.
-Todas as imagens estão em `assets/images/` e exportadas de `capySprites.ts`.
+`capySprites.ts` é a **fonte única de verdade** para todos os assets de imagem.
+Nunca use `require("../../assets/images/...")` diretamente nas telas ou componentes
+— importe sempre deste arquivo para manter os paths centralizados.
 
-| Exportação | Camada | Conteúdo |
+### Organização de pastas
+
+```
+assets/images/
+├── capy/         sprites da Capy (corpo, olhos, boca, animação de andar)
+├── backgrounds/  fundos de tela cheia dos cômodos e minijogos (390 × 844 px)
+├── items/        pinhas, cestas, araucárias
+├── shop/         fachada da loja e acessórios compráveis
+└── icons/        ícones de UI e status
+```
+
+Para adicionar um novo asset: salve o arquivo na subpasta correta e exporte-o
+de `capySprites.ts`. Nunca importe de `assets/images/` diretamente nas telas.
+
+### Exportações disponíveis
+
+| Exportação | Pasta | Conteúdo |
 |---|---|---|
-| `capyBody` | Base | Corpo inteiro: `normal`, `cesta`, `pipoca`, `sad` |
-| `capyEyes` | Olhos | `openNormal`, `openSick`, `tired`, `closed` |
-| `capyMouth` | Boca/bochechas | `normal`, `happy`, `veryHappy`, `joke`, `sick`, `uau`, `faceTired` |
-| `capyWalk` | Animação | Capy andando com cesta: `center`, `right`, `left` |
-| `cestaPinhas` | Item | Array[5]: cesta com 1–5 pinhas (índice = quantidade − 1) |
-| `shopAssets` | UI | `loja` (fachada da loja), `hatBoina` (acessório) |
-| `statusIcons` | UI | `sleep` (ícone Zzz para o quarto) |
-
-**Regra:** não use `require("../../assets/images/...")` diretamente nas telas —
-importe de `capySprites.ts` para manter os paths centralizados.
+| `capyBody` | `capy/` | Corpo inteiro: `normal`, `cesta`, `pipoca`, `sad` |
+| `capyEyes` | `capy/` | Olhos: `openNormal`, `openSick`, `tired`, `closed` |
+| `capyMouth` | `capy/` | Boca/bochechas: `normal`, `happy`, `veryHappy`, `joke`, `sick`, `uau`, `faceTired` |
+| `capyWalk` | `capy/` | Animação: `center`, `right`, `left` |
+| `roomBackgrounds` | `backgrounds/` | Fundos dos cômodos: `kitchen`, `bathroom`, `bedroom`, `garden`, `home` |
+| `gameBackgrounds` | `backgrounds/` | Fundos de minijogos: `catchFood`, `hero` |
+| `cestaPinhas` | `items/` | Array[5]: cesta com 1–5 pinhas (índice = quantidade − 1) |
+| `pinhaAssets` | `items/` | Pinha individual: `pinha`, `pinhaV2`, `pinhaV2Chroma` |
+| `araucariaAssets` | `items/` | Árvore: `normal`, `wide`, `wideChroma` |
+| `shopAssets` | `shop/` | `loja` (fachada), `hatBoina` (acessório) |
+| `statusIcons` | `icons/` | `sleep` (ícone Zzz para o quarto) |
 
 ### Posicionamento das camadas de rosto (ROOM_FACE)
 
@@ -138,7 +156,7 @@ const DEFAULT_FACE = {
 
 ## Imagens de background dos cômodos
 
-As imagens de cena (`capybara-kitchen.png` etc.) devem estar em `assets/images/`
+As imagens de cena devem estar em `assets/images/backgrounds/`
 e ter **390 × 844 px** — proporção exata da tela lógica do celular alvo.
 
 Para redimensionar novas imagens preservando o conteúdo (usa `sharp`):

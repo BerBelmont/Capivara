@@ -19,6 +19,7 @@ import { ActionButton } from "../components/ActionButton";
 import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
 import { RootStackParamList } from "../types/game";
 import { addCoinsBonus, addHappinessBonus } from "../utils/statusRules";
+import { araucariaAssets, cestaPinhas, gameBackgrounds, pinhaAssets } from "../assets/capySprites";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CatchFoodGame">;
 
@@ -57,18 +58,10 @@ const CONE_WIDTH = 54;
 const CONE_HEIGHT = 54;
 const MIN_CONE_SPAWN_DISTANCE = Math.min(SCREEN_WIDTH * 0.42, 180);
 
-const gameBackground = require("../../assets/images/capybara-pine-game-bg.png");
-const araucariaImage = require("../../assets/images/araucaria-wide.png");
-const pineconeImage = require("../../assets/images/pinha-v2.png");
-
-// Static requires — React Native bundler needs these at build time
-const BASKET_IMAGES = [
-  require("../../assets/images/cestas-pinhas.png"),
-  require("../../assets/images/cesta-pinhas-2un.png"),
-  require("../../assets/images/cesta-pinhas-3un.png"),
-  require("../../assets/images/cesta-pinhas-4un.png"),
-  require("../../assets/images/cesta-pinhas-5un.png"),
-];
+const gameBackground = gameBackgrounds.catchFood;
+const araucariaImage = araucariaAssets.wide;
+const pineconeImage = pinhaAssets.pinhaV2;
+const BASKET_IMAGES = cestaPinhas;
 
 function getBasketImageIndex(collected: number): number {
   return Math.min(Math.floor(collected / 2), 4);

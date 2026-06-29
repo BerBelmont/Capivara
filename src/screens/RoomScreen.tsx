@@ -14,7 +14,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
 import { TopBar } from "../components/TopBar";
-import { capyBody, capyEyes, capyMouth } from "../assets/capySprites";
+import { capyBody, capyEyes, capyMouth, roomBackgrounds } from "../assets/capySprites";
 import { loadGameStatus, saveGameStatus, saveLastRoom } from "../storage/gameStorage";
 import {
   CapybaraMood,
@@ -76,25 +76,25 @@ const ROOM_FACE: Record<RoomName, FaceLayout> = {
 
 const roomConfigs: Record<RoomName, RoomConfig> = {
   Kitchen:  {
-    background:  require("../../assets/images/capybara-kitchen.png"),
+    background:  roomBackgrounds.kitchen,
     action:      "feed",
     actionLabel: "Alimentar",
     icon:        "🥕"
   },
   Bathroom: {
-    background:  require("../../assets/images/capybara-bathroom.png"),
+    background:  roomBackgrounds.bathroom,
     action:      "bath",
     actionLabel: "Dar banho",
     icon:        "🫧"
   },
   Garden:   {
-    background:  require("../../assets/images/capybara-lobby-cartoon.png"),
+    background:  roomBackgrounds.garden,
     action:      "play",
     actionLabel: "Brincar",
     icon:        "🏖️"
   },
   Bedroom:  {
-    background:  require("../../assets/images/capybara-bedroom.png"),
+    background:  roomBackgrounds.bedroom,
     action:      "sleep",
     actionLabel: "Dormir",
     icon:        "🌙"
