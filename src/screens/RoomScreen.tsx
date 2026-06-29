@@ -279,7 +279,6 @@ export function RoomScreen({ navigation, route }: Props) {
             style={({ pressed }) => [styles.barSlot, pressed && styles.pressed]}
           >
             <Image source={shopAssets.shop} style={styles.shopIcon} resizeMode="contain" />
-            <Text style={styles.barLabel}>Loja</Text>
           </Pressable>
         </View>
 
@@ -330,9 +329,10 @@ const styles = StyleSheet.create({
   },
   vBarLabel: {
     color: "#4E2D17",
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: "900",
-    textAlign: "center"
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   spriteArea: {
     flex: 1,
@@ -396,7 +396,8 @@ const styles = StyleSheet.create({
     color: "#5D351C",
     fontSize: 11,
     fontWeight: "900",
-    textAlign: "center"
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   selectorRow: {
     flexDirection: "row",
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
     gap: 2
   },
   shopIcon: {
-    width: 40,
-    height: 40
+    width: 80,
+    height: 80
   }
 });

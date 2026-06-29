@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginLeft: 6,
     textAlign: "center",
+    textTransform: "uppercase",
     textShadowColor: "#5E351C",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 1
@@ -221,13 +222,15 @@ const styles = StyleSheet.create({
   gameTitle: {
     color: "#5B3318",
     fontSize: 22,
-    fontWeight: "900"
+    fontWeight: "900",
+    textTransform: "uppercase"
   },
   gameSubtitle: {
     color: "#7C5732",
     fontSize: 16,
     fontWeight: "800",
-    marginTop: 4
+    marginTop: 4,
+    textTransform: "uppercase"
   },
   playButton: {
     width: 52,

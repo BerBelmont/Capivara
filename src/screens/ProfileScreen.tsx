@@ -214,7 +214,8 @@ const styles = StyleSheet.create({
     color: "#5D351C",
     fontSize: 14,
     fontWeight: "900",
-    marginLeft: 6
+    marginLeft: 6,
+    textTransform: "uppercase"
   },
   levelTrack: {
     height: 12,
@@ -270,7 +271,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "900",
     marginBottom: 8,
-    textAlign: "center"
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   evolutionRow: {
     flexDirection: "row",
@@ -302,7 +304,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     marginTop: 3,
-    textAlign: "center"
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   arrow: {
     color: "#8A5428",

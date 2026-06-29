@@ -86,7 +86,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     marginTop: 2,
-    textAlign: "center"
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   activeLabel: {
     color: "#47751F"

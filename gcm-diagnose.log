@@ -1,0 +1,216 @@
+﻿Diagnose log at 2026-06-29T01:12:44Z
+
+AppPath: C:\Program Files\Git\mingw64\bin\git-credential-manager.exe
+InstallDir: C:\Program Files\Git\mingw64\bin\
+Version: 2.7.3+5fa7116896c82164996a609accd1c5ad90fe730a
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 26200)
+Reading environment variables... OK
+ Variables:
+OneDriveConsumer=C:\Users\erikg\OneDrive
+ProgramFiles(x86)=C:\Program Files (x86)
+MSYSTEM=MINGW64
+ProgramW6432=C:\Program Files
+windir=C:\WINDOWS
+ChocolateyInstall=C:\ProgramData\chocolatey
+PROCESSOR_IDENTIFIER=AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD
+TMP=C:\Users\erikg\AppData\Local\Temp
+PROCESSOR_ARCHITECTURE=AMD64
+NUMBER_OF_PROCESSORS=16
+BAGGAGE=sentry-environment=production,sentry-release=Claude%401.15962.1,sentry-public_key=2f98127cbffe4740b1f767a2de77d23b,sentry-trace_id=6c3729cc01f740abb85305bc5a4e3250,sentry-org_id=1158394
+ProgramData=C:\ProgramData
+PROCESSOR_REVISION=5000
+CLAUDE_CODE_OAUTH_SCOPES=user:inference user:file_upload user:profile user:sessions:claude_code
+USERPROFILE=C:\Users\erikg
+CommonProgramFiles=C:\Program Files\Common Files
+NODE_USE_SYSTEM_CA=1
+ChocolateyLastPathUpdate=134254363528800595
+FPS_BROWSER_APP_PROFILE_STRING=Internet Explorer
+FPS_BROWSER_USER_PROFILE_STRING=Default
+LOGONSERVER=\\ERIK
+TEMP=C:\Users\erikg\AppData\Local\Temp
+USERNAME=erikg
+CLAUDE_CODE_ENABLE_ASK_USER_QUESTION_TOOL=true
+CHROME_CRASHPAD_PIPE_NAME=\\.\pipe\crashpad_8684_KMVDXAYXTHQSQGVP
+GIT_EXEC_PATH=C:/Program Files/Git/mingw64/libexec/git-core
+PLINK_PROTOCOL=ssh
+NoDefaultCurrentDirectoryInExePath=1
+OneDrive=C:\Users\erikg\OneDrive
+PATH=C:/Program Files/Git/mingw64/libexec/git-core;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\erikg\bin;C:\Python314\Scripts\;C:\Python314\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\Git\cmd;C:\ProgramData\chocolatey\bin;%NVM_HOME%;%NVM_SYMLINK%;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\dotnet\;C:\Users\erikg\AppData\Local\Microsoft\WindowsApps;C:\Users\erikg\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\erikg\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\erikg\.dotnet\tools;C:\Python314;C:\Program Files\Git\mingw64\bin
+EFC_5884_1592913036=1
+USE_STAGING_OAUTH=
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+SystemRoot=C:\WINDOWS
+PUBLIC=C:\Users\Public
+PROCESSOR_LEVEL=25
+SENTRY-TRACE=6c3729cc01f740abb85305bc5a4e3250-848c5d77f3fea9e9
+API_TIMEOUT_MS=900000
+LC_CTYPE=C.UTF-8
+HOMEPATH=\Users\erikg
+PSExecutionPolicyPreference=Bypass
+CLAUDE_CODE_EMIT_TOOL_USE_SUMMARIES=false
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+NVM_HOME=C:\Users\erikg\AppData\Local\nvm
+ALLUSERSPROFILE=C:\ProgramData
+CommonProgramW6432=C:\Program Files\Common Files
+MCP_CONNECTION_NONBLOCKING=true
+EFC_5884_4126798990=1
+CLAUDE_CODE_SDK_HAS_OAUTH_REFRESH=1
+GIT_EDITOR=true
+TERM=xterm-256color
+COREPACK_ENABLE_AUTO_PIN=0
+SESSIONNAME=Console
+CLAUDE_CODE_CHILD_SESSION=1
+DriverData=C:\Windows\System32\Drivers\DriverData
+HOMEDRIVE=C:
+CLAUDE_CODE_DISABLE_CRON=
+AI_AGENT=claude-code_2-1-187_agent
+SystemDrive=C:
+CLAUDE_CODE_ENTRYPOINT=claude-desktop
+OS=Windows_NT
+ProgramFiles=C:\Program Files
+ComSpec=C:\WINDOWS\system32\cmd.exe
+GIT_TRACE2_PARENT_SID=10c7bfd3-4d4e-4bb2-b242-d96ad3a281b6
+USERDOMAIN_ROAMINGPROFILE=ERIK
+CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH=1
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW;.CPL
+HOME=C:\Users\erikg
+CLAUDE_AGENT_SDK_VERSION=0.3.187
+PSModulePath=C:\Users\erikg\OneDrive\Documentos\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+NVM_SYMLINK=C:\nvm4w\nodejs
+APPDATA=C:\Users\erikg\AppData\Roaming
+USERDOMAIN=ERIK
+COMPUTERNAME=ERIK
+LOCALAPPDATA=C:\Users\erikg\AppData\Local
+CLAUDE_CODE_SESSION_ID=46046bb6-266c-42b9-aefe-aa8e068b2f65
+CLAUDECODE=1
+TMPDIR=C:\Users\erikg\AppData\Local\Temp
+DISABLE_MICROCOMPACT=1
+USE_LOCAL_OAUTH=
+COLORTERM=truecolor
+DISABLE_AUTOUPDATER=1
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\erikg\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\erikg\AppData\Local\Temp\fc1d455ba15903520fc68127'... OK
+Reading from temporary file 'C:\Users\erikg\AppData\Local\Temp\fc1d455ba15903520fc68127'... OK
+Deleting temporary file 'C:\Users\erikg\AppData\Local\Temp\fc1d455ba15903520fc68127'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\erikg
+UserDataDirectoryPath: C:\Users\erikg\.gcm
+GetCurrentDirectory(): C:\Capivara
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com...Sending HEAD request to https://example.com... OK
+ OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:63480/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
+------------
+Diagnostic: Git
+Skipped: False
+Success: True
+Exception: None
+Log:
+Getting Git version... OK
+Git version is '2.54.0.windows.1'
+Locating current repository...Git repository at 'C:/Capivara/.git'
+ OK
+Listing all Git configuration... OK
+Git configuration:
+file:C:/Program Files/Git/etc/gitconfig	diff.astextplain.textconv=astextplain
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.process=git-lfs filter-process
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.required=true
+file:C:/Program Files/Git/etc/gitconfig	http.sslbackend=schannel
+file:C:/Program Files/Git/etc/gitconfig	core.autocrlf=true
+file:C:/Program Files/Git/etc/gitconfig	core.fscache=true
+file:C:/Program Files/Git/etc/gitconfig	core.symlinks=false
+file:C:/Program Files/Git/etc/gitconfig	pull.rebase=false
+file:C:/Program Files/Git/etc/gitconfig	credential.helper=manager
+file:C:/Program Files/Git/etc/gitconfig	credential.https://dev.azure.com.usehttppath=true
+file:C:/Program Files/Git/etc/gitconfig	init.defaultbranch=master
+file:C:/Users/erikg/.gitconfig	safe.directory=C:/
+file:C:/Users/erikg/.gitconfig	user.name=Erik Gastão Tavares
+file:C:/Users/erikg/.gitconfig	user.email=erikgastaotavares2003@gmail.com
+file:.git/config	core.repositoryformatversion=0
+file:.git/config	core.filemode=false
+file:.git/config	core.bare=false
+file:.git/config	core.logallrefupdates=true
+file:.git/config	core.symlinks=false
+file:.git/config	core.ignorecase=true
+file:.git/config	remote.upstream.url=https://github.com/BerBelmont/Capivara.git
+file:.git/config	remote.upstream.fetch=+refs/heads/erik-adds:refs/remotes/upstream/erik-adds
+file:.git/config	branch.erik-adds.remote=origin
+file:.git/config	branch.erik-adds.merge=refs/heads/erik-adds
+file:.git/config	branch.erik-adds.vscode-merge-base=origin/main
+file:.git/config	remote.origin.url=https://github.com/BerBelmont/Capivara.git
+file:.git/config	remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+file:.git/config	branch.main.remote=origin
+file:.git/config	branch.main.merge=refs/heads/main
+file:.git/config	branch.main.vscode-merge-base=origin/main
+
+
+------------
+Diagnostic: Credential storage
+Skipped: False
+Success: True
+Exception: None
+Log:
+ICredentialStore instance is of type: CredentialStore
+Writing test credential... OK
+Reading test credential... OK
+Deleting test credential... OK
+
+------------
+Diagnostic: Microsoft authentication (AAD/MSA)
+Skipped: False
+Success: True
+Exception: None
+Log:
+Broker is not enabled.
+Flow type is: Auto
+Gathering MSAL token cache data... OK
+CacheDirectory: C:\Users\erikg\AppData\Local\.IdentityService
+CacheFileName: msal.cache
+CacheFilePath: C:\Users\erikg\AppData\Local\.IdentityService\msal.cache
+Creating cache helper... OK
+Verifying MSAL token cache persistence... OK
+
+------------
+Diagnostic: GitHub API
+Skipped: False
+Success: True
+Exception: None
+Log:
+Using 'https://github.com/' as API target.
+Querying '/meta' endpoint... OK
+

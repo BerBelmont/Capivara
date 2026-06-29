@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginLeft: 6,
     textAlign: "center",
+    textTransform: "uppercase",
     textShadowColor: "#5E351C",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 1
@@ -235,7 +236,8 @@ const styles = StyleSheet.create({
     color: "#6A3B1E",
     fontSize: 11,
     fontWeight: "900",
-    textAlign: "center"
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   activeTabText: {
     color: "#FFFFFF"
@@ -276,7 +278,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     lineHeight: 14,
-    textAlign: "center"
+    textAlign: "center",
+    textTransform: "uppercase"
   },
   priceRow: {
     alignItems: "center",

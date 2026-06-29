@@ -104,11 +104,14 @@ export const araucariaAssets = {
 // Shop — loja e acessórios
 // -----------------------------------------------------------------------------
 
-/** Assets da loja e itens compráveis */
+/** Assets da loja */
 export const shopAssets = {
-  loja:     require("../../assets/images/shop/loja.png"),
-  shop:     require("../../assets/images/shop/shop.png"),
-  hatBoina: require("../../assets/images/shop/hat-boina.png"),
+  shop: require("../../assets/images/shop/shop.png"),
+} as const;
+
+/** Acessórios compráveis (chapéus, etc.) */
+export const hatAssets = {
+  boina: require("../../assets/images/hats/hat-boina.png"),
 } as const;
 
 // -----------------------------------------------------------------------------

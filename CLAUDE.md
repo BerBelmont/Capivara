@@ -25,6 +25,7 @@ sempre simplicidade e clareza.
 
 - Instalar: `npm install`
 - Rodar no celular: `npx expo start --tunnel` (use sempre `--tunnel` — funciona em qualquer rede)
+  - Se aparecer `CommandError: failed to start tunnel / remote gone away`, é instabilidade do ngrok — tente novamente ou use `npx expo start` (sem tunnel) se o celular estiver na mesma rede Wi-Fi.
 - Rodar no navegador: `npx expo start --web`
 - Verificar tipos: `npx tsc --noEmit`
 
@@ -136,7 +137,8 @@ de `capySprites.ts`. Nunca importe de `assets/images/` diretamente nas telas.
 | `cestaPinhas` | `items/` | Array[5]: cesta com 1–5 pinhas (índice = quantidade − 1) |
 | `pinhaAssets` | `items/` | Pinha individual: `pinha`, `pinhaV2`, `pinhaV2Chroma` |
 | `araucariaAssets` | `items/` | Árvore: `normal`, `wide`, `wideChroma` |
-| `shopAssets` | `shop/` | `loja` (fachada), `hatBoina` (acessório) |
+| `shopAssets` | `shop/` | `shop` (ícone da loja) |
+| `hatAssets` | `hats/` | `boina` (chapéu boina) |
 | `statusIcons` | `icons/` | `sleep` (ícone Zzz para o quarto) |
 
 ### Posicionamento das camadas de rosto (ROOM_FACE)
