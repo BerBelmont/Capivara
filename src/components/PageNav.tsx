@@ -91,15 +91,19 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#C49A52",
-    opacity: 0.4
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#8A5428",
+    opacity: 0.5
   },
   dotActive: {
     opacity: 1,
     width: 13,
     height: 13,
     borderRadius: 7,
-    backgroundColor: "#5D351C"
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#8A5428"
   },
   label: {
     color: "#FFFFFF",
