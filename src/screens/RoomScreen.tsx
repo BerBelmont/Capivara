@@ -16,6 +16,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { AccessoryLayer } from "../components/AccessoryLayer";
+import { GardenBall } from "../components/GardenBall";
 import { KitchenFood } from "../components/KitchenFood";
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
 import { TopBar } from "../components/TopBar";
@@ -433,6 +434,23 @@ export function RoomScreen({ navigation, route }: Props) {
     saveGameStatus(updated);
   }
 
+  const lastPlayRef = useRef(0);
+  function handlePlay() {
+    const now = Date.now();
+    if (now - lastPlayRef.current < 3000) return;
+    lastPlayRef.current = now;
+
+    if (!status.lightOn) {
+      setMessage("A Capy está dormindo! Vá ao quarto e acenda a luz para acordá-la. 🌙");
+      return;
+    }
+    const updated = applyCareAction(statusRef.current, "play");
+    statusRef.current = updated;
+    setStatus(updated);
+    saveGameStatus(updated);
+    setMessage("A Capy adorou brincar com a bola!");
+  }
+
   function handleCareAction() {
     if (route.name === "Bedroom") {
       handleLampToggle();
@@ -480,10 +498,10 @@ export function RoomScreen({ navigation, route }: Props) {
         source={config.background}
         style={StyleSheet.absoluteFillObject}
       />
-      {route.name === "Bedroom" && !status.lightOn ? (
+      {!status.lightOn ? (
         <View style={styles.darkOverlay} />
       ) : null}
-      <SafeAreaView style={styles.safeArea}>
+<SafeAreaView style={styles.safeArea}>
 
         {/* Barra superior: moedas à esquerda, perfil à direita */}
         <TopBar coins={status.coins} onProfile={() => navigation.navigate("Profile")} />
@@ -679,6 +697,9 @@ export function RoomScreen({ navigation, route }: Props) {
         </View>
 
       </SafeAreaView>
+      {route.name === "Garden" ? (
+        <GardenBall onPlay={handlePlay} />
+      ) : null}
     </View>
   );
 }

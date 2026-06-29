@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { coinAssets } from "../assets/capySprites";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -78,7 +79,7 @@ export function ShopScreen({ navigation }: Props) {
             </View>
 
             <View style={styles.coinPill}>
-              <MaterialCommunityIcons color="#F5A623" name="gold" size={19} />
+              <Image source={coinAssets.coin} style={styles.coinIcon} resizeMode="contain" />
               <Text style={styles.coinText}>{status.coins}</Text>
               <View style={styles.plusCircle}>
                 <MaterialCommunityIcons color="#FFFFFF" name="plus" size={18} />
@@ -143,11 +144,15 @@ export function ShopScreen({ navigation }: Props) {
                       !ownsItem && !canBuy && styles.lockedPill
                     ]}
                   >
-                    <MaterialCommunityIcons
-                      color={ownsItem ? "#FFFFFF" : "#E6A135"}
-                      name={ownsItem ? (equipped ? "check-circle" : "hanger") : "gold"}
-                      size={13}
-                    />
+                    {ownsItem ? (
+                      <MaterialCommunityIcons
+                        color="#FFFFFF"
+                        name={equipped ? "check-circle" : "hanger"}
+                        size={13}
+                      />
+                    ) : (
+                      <Image source={coinAssets.coinSm} style={styles.coinIconSm} resizeMode="contain" />
+                    )}
                     <Text style={[styles.price, ownsItem && styles.ownedText]}>
                       {ownsItem ? (equipped ? "Equipado" : "Usar") : item.price}
                     </Text>
@@ -238,6 +243,14 @@ const styles = StyleSheet.create({
     textShadowColor: "#5E351C",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 1
+  },
+  coinIcon: {
+    width: 24,
+    height: 24,
+  },
+  coinIconSm: {
+    width: 14,
+    height: 14,
   },
   coinPill: {
     height: 38,

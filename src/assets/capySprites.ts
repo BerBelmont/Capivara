@@ -111,8 +111,8 @@ export const shopAssets = {
 
 /** Assets de sabão e banho */
 export const soapAssets = {
-  sabao:    require("../../assets/images/soaps/sabao-icon.png"),
-  chuveiro: require("../../assets/images/soaps/chuveiro-icon.png"),
+  sabao:    require("../../assets/images/soaps/pou-soap.png"),
+  chuveiro: require("../../assets/images/soaps/pou-shower.png"),
 } as const;
 
 /** Assets de abajur/lâmpada do quarto */
@@ -182,6 +182,13 @@ export const hatAssets = {
 /** Ícones de estado exibidos nos cômodos */
 export const statusIcons = {
   sleep: require("../../assets/images/icons/sleep-icon.png"),
+} as const;
+
+/** Imagens de moeda (do Pou) */
+export const coinAssets = {
+  coin:   require("../../assets/images/icons/coin.png"),
+  coinSm: require("../../assets/images/icons/coin-sm.png"),
+  coinBig: require("../../assets/images/icons/coin-big.png"),
 } as const;
 
 // -----------------------------------------------------------------------------

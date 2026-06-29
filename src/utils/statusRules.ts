@@ -1,7 +1,7 @@
 import { CapybaraMood, CapybaraStatus, CareAction } from "../types/game";
 
 export const initialStatus: CapybaraStatus = {
-  coins: 1250,
+  coins: 9999,
   hunger: 70,
   happiness: 70,
   energy: 70,
@@ -12,10 +12,10 @@ export const initialStatus: CapybaraStatus = {
 };
 
 const actionChanges: Record<CareAction, Partial<CapybaraStatus>> = {
-  feed:  { hunger: 25, hygiene: -5 },
-  bath:  { hygiene: 30, energy: -5 },
-  sleep: { energy: 30, hunger: -10 },
-  play:  { happiness: 20, energy: -10 }
+  feed:  { hunger: 25, hygiene: -20, happiness: 5 },
+  bath:  { hygiene: 40, energy: -15, happiness: 5 },
+  sleep: { energy: 40, hunger: -20, hygiene: -10 },
+  play:  { happiness: 30, energy: -20, hygiene: -15, hunger: -10 }
 };
 
 export const actionMessages: Record<CareAction, string> = {

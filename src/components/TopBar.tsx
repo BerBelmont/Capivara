@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { coinAssets } from "../assets/capySprites";
 
 type TopBarProps = {
   coins: number;
@@ -10,7 +11,7 @@ export function TopBar({ coins, onProfile }: TopBarProps) {
   return (
     <View style={styles.topBar}>
       <View style={styles.coinPill}>
-        <MaterialCommunityIcons color="#F5A623" name="gold" size={21} />
+        <Image source={coinAssets.coin} style={styles.coinIcon} resizeMode="contain" />
         <Text style={styles.coinText}>{coins}</Text>
         <View style={styles.plusCircle}>
           <MaterialCommunityIcons color="#FFFFFF" name="plus" size={20} />
@@ -35,6 +36,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8
+  },
+  coinIcon: {
+    width: 26,
+    height: 26,
   },
   coinPill: {
     height: 42,
