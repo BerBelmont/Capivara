@@ -3,6 +3,7 @@ import {
   Animated,
   Image,
   ImageSourcePropType,
+  PanResponder,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -16,7 +17,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { AccessoryLayer } from "../components/AccessoryLayer";
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
 import { TopBar } from "../components/TopBar";
-import { capyBody, capyEyes, capyMouth, roomBackgrounds, shopAssets } from "../assets/capySprites";
+import { capyBody, capyEyes, capyMouth, overlayAssets, roomBackgrounds, shopAssets } from "../assets/capySprites";
 import { loadGameStatus, saveGameStatus, saveLastRoom } from "../storage/gameStorage";
 import {
   CapybaraMood,
@@ -63,15 +64,26 @@ const COMPACT_BAR_HEIGHT = 44;
 
 const SPRITE_WIDTH = 220;
 const SPRITE_HEIGHT = 330;
-const BATH_HYGIENE_GAIN = 30;
-const BATH_STEPS = 6;
+const BATH_HYGIENE_GAIN = 35;
 const LOW_STATUS_THRESHOLD = 30;
+const SPONGE_SIZE = 54;
+const SPONGE_TOUCH_RADIUS = 34;
 
 const actionCosts: Record<CareAction, ActionCost[]> = {
   feed: [{ key: "hygiene", label: "higiene" }],
   bath: [{ key: "energy", label: "energia" }],
   sleep: [{ key: "hunger", label: "fome" }]
 };
+
+const dirtSpots = [
+  { id: "head", top: 82, left: 80, width: 48, height: 38, rotate: "-9deg" },
+  { id: "belly", top: 168, left: 92, width: 58, height: 46, rotate: "7deg" },
+  { id: "back", top: 142, left: 38, width: 48, height: 38, rotate: "12deg" },
+  { id: "leg", top: 238, left: 118, width: 50, height: 40, rotate: "-13deg" },
+  { id: "side", top: 202, left: 48, width: 44, height: 34, rotate: "5deg" }
+] as const;
+
+type DirtSpotId = (typeof dirtSpots)[number]["id"];
 
 // Posições das camadas de rosto sobrepostas ao corpo.
 // Cada cômodo pode sobrescrever os valores padrão individualmente.
@@ -161,9 +173,12 @@ export function RoomScreen({ navigation, route }: Props) {
   const [status, setStatus] = useState<CapybaraStatus>(initialStatus);
   const [message, setMessage] = useState("");
   const [showSleepAnimation, setShowSleepAnimation] = useState(false);
-  const [isBathing, setIsBathing] = useState(false);
-  const bathProgress = useRef(new Animated.Value(0)).current;
-  const bathIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isCleaning, setIsCleaning] = useState(false);
+  const [visibleDirtIds, setVisibleDirtIds] = useState<DirtSpotId[]>([]);
+  const [spongePosition, setSpongePosition] = useState({ x: 88, y: 138 });
+  const statusRef = useRef<CapybaraStatus>(initialStatus);
+  const visibleDirtIdsRef = useRef<DirtSpotId[]>([]);
+  const isCleaningRef = useRef(false);
   const config = roomConfigs[route.name];
   const barConfig = roomBarConfigs[route.name];
   const face = ROOM_FACE[route.name];
@@ -178,29 +193,48 @@ export function RoomScreen({ navigation, route }: Props) {
       loadGameStatus().then(setStatus);
       saveLastRoom(route.name);
       setShowSleepAnimation(false);
-      setIsBathing(false);
-      bathProgress.stopAnimation();
-      bathProgress.setValue(0);
-      if (bathIntervalRef.current) {
-        clearInterval(bathIntervalRef.current);
-        bathIntervalRef.current = null;
-      }
-
-      return () => {
-        bathProgress.stopAnimation();
-        if (bathIntervalRef.current) {
-          clearInterval(bathIntervalRef.current);
-          bathIntervalRef.current = null;
-        }
-      };
+      setIsCleaning(false);
+      setSpongePosition({ x: 88, y: 138 });
     }, [route.name])
   );
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    visibleDirtIdsRef.current = visibleDirtIds;
+  }, [visibleDirtIds]);
+
+  useEffect(() => {
+    isCleaningRef.current = isCleaning;
+  }, [isCleaning]);
 
   useEffect(() => {
     if (route.name !== "Bedroom") {
       setShowSleepAnimation(false);
     }
   }, [route.name]);
+
+  useEffect(() => {
+    if (status.hygiene <= LOW_STATUS_THRESHOLD) {
+      setVisibleDirtIds((current) => (
+        current.length > 0 ? current : dirtSpots.map((spot) => spot.id)
+      ));
+      return;
+    }
+
+    setVisibleDirtIds([]);
+    setIsCleaning(false);
+  }, [status.hygiene]);
+
+  function getSpongePositionForSpot(spotId: DirtSpotId | undefined) {
+    const spot = dirtSpots.find((item) => item.id === spotId) ?? dirtSpots[0];
+    return {
+      x: Math.min(SPRITE_WIDTH - SPONGE_SIZE, spot.left + spot.width - 18),
+      y: Math.max(0, spot.top - 10)
+    };
+  }
 
   function handlePrev() {
     if (!prevPage) return;
@@ -224,62 +258,116 @@ export function RoomScreen({ navigation, route }: Props) {
   }
 
   function handleBathAction() {
-    if (isBathing) return;
-
     const blockedMessage = getBlockedActionMessage("bath");
     if (blockedMessage) {
       setMessage(blockedMessage);
       return;
     }
 
-    setMessage("Esfregando com carinho...");
-    setShowSleepAnimation(false);
-    setIsBathing(true);
-    bathProgress.setValue(0);
-
-    const energyAdjustedStatus: CapybaraStatus = {
-      ...status,
-      energy: keepStatusValueInRange(status.energy - 5)
-    };
-    let nextBathStatus = energyAdjustedStatus;
-    setStatus(energyAdjustedStatus);
-
-    let step = 0;
-    const hygienePerStep = BATH_HYGIENE_GAIN / BATH_STEPS;
-
-    Animated.sequence([
-      Animated.timing(bathProgress, {
-        toValue: 1,
-        duration: 1300,
-        useNativeDriver: true
-      }),
-      Animated.timing(bathProgress, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true
-      })
-    ]).start(() => {
-      setIsBathing(false);
+    if (status.hygiene > LOW_STATUS_THRESHOLD && visibleDirtIds.length === 0) {
+      const updatedStatus = applyCareAction(status, "bath");
+      setStatus(updatedStatus);
       setMessage(actionMessages.bath);
+      setShowSleepAnimation(false);
+      saveGameStatus(updatedStatus);
+      return;
+    }
+
+    const nextDirtIds = visibleDirtIds.length > 0
+      ? visibleDirtIds
+      : dirtSpots.map((spot) => spot.id);
+
+    setVisibleDirtIds(nextDirtIds);
+    setIsCleaning(true);
+    setSpongePosition(getSpongePositionForSpot(nextDirtIds[0]));
+    setMessage("Arraste a bucha por cima das sujeirinhas para limpar.");
+    setShowSleepAnimation(false);
+  }
+
+  function finishManualCleaning() {
+    const currentStatus = statusRef.current;
+    const cleanedStatus: CapybaraStatus = {
+      ...currentStatus,
+      energy: keepStatusValueInRange(currentStatus.energy - 5),
+      hygiene: keepStatusValueInRange(currentStatus.hygiene + BATH_HYGIENE_GAIN)
+    };
+
+    setStatus(cleanedStatus);
+    setIsCleaning(false);
+    setMessage(actionMessages.bath);
+    saveGameStatus(cleanedStatus);
+  }
+
+  function removeDirtSpot(spotId: DirtSpotId) {
+    if (!isCleaningRef.current) {
+      setMessage("Clique em Sabao para pegar a bucha primeiro.");
+      return;
+    }
+
+    const remainingDirt = visibleDirtIdsRef.current.filter((id) => id !== spotId);
+    visibleDirtIdsRef.current = remainingDirt;
+    setVisibleDirtIds(remainingDirt);
+
+    if (remainingDirt.length > 0) {
+      setMessage("Boa! Continue limpando as manchas.");
+      return;
+    }
+
+    finishManualCleaning();
+  }
+
+  function cleanDirtAtPosition(x: number, y: number) {
+    if (!isCleaningRef.current) return;
+
+    const spongeCenterX = x + SPONGE_SIZE / 2;
+    const spongeCenterY = y + SPONGE_SIZE / 2;
+    const touchedSpot = dirtSpots.find((spot) => {
+      if (!visibleDirtIdsRef.current.includes(spot.id)) return false;
+
+      const spotCenterX = spot.left + spot.width / 2;
+      const spotCenterY = spot.top + spot.height / 2;
+      const distance = Math.hypot(spongeCenterX - spotCenterX, spongeCenterY - spotCenterY);
+
+      return distance <= SPONGE_TOUCH_RADIUS;
     });
 
-    bathIntervalRef.current = setInterval(() => {
-      step += 1;
-      nextBathStatus = {
-        ...nextBathStatus,
-        hygiene: keepStatusValueInRange(nextBathStatus.hygiene + hygienePerStep)
-      };
-      setStatus(nextBathStatus);
-
-      if (step >= BATH_STEPS) {
-        if (bathIntervalRef.current) {
-          clearInterval(bathIntervalRef.current);
-          bathIntervalRef.current = null;
-        }
-        saveGameStatus(nextBathStatus);
-      }
-    }, 190);
+    if (touchedSpot) {
+      removeDirtSpot(touchedSpot.id);
+    }
   }
+
+  const cleaningPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => isCleaningRef.current,
+      onMoveShouldSetPanResponder: () => isCleaningRef.current,
+      onPanResponderGrant: (event) => {
+        const x = Math.min(
+          SPRITE_WIDTH - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationX - SPONGE_SIZE / 2)
+        );
+        const y = Math.min(
+          SPRITE_HEIGHT - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationY - SPONGE_SIZE / 2)
+        );
+
+        setSpongePosition({ x, y });
+        cleanDirtAtPosition(x, y);
+      },
+      onPanResponderMove: (event) => {
+        const x = Math.min(
+          SPRITE_WIDTH - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationX - SPONGE_SIZE / 2)
+        );
+        const y = Math.min(
+          SPRITE_HEIGHT - SPONGE_SIZE,
+          Math.max(0, event.nativeEvent.locationY - SPONGE_SIZE / 2)
+        );
+
+        setSpongePosition({ x, y });
+        cleanDirtAtPosition(x, y);
+      }
+    })
+  ).current;
 
   function handleCareAction() {
     if (!config.action) {
@@ -357,7 +445,10 @@ export function RoomScreen({ navigation, route }: Props) {
 
         {/* Capy composta por camadas */}
         <View style={styles.spriteArea}>
-          <View style={styles.spriteContainer}>
+          <View
+            style={styles.spriteContainer}
+            {...cleaningPanResponder.panHandlers}
+          >
             <Image
               resizeMode="contain"
               source={getBodySprite(mood, route.name)}
@@ -373,10 +464,13 @@ export function RoomScreen({ navigation, route }: Props) {
               source={getMouthSprite(mood)}
               style={[styles.absoluteLayer, { top: face.mouthTop, left: face.mouthLeft, width: face.mouthW, height: face.mouthH }]}
             />
+            <DirtLayer
+              visibleDirtIds={visibleDirtIds}
+            />
             <AccessoryLayer accessoryId={status.equippedAccessory} />
             {showSleepAnimation && route.name === "Bedroom" ? <SleepBubbles /> : null}
-            {isBathing && route.name === "Bathroom" ? (
-              <BathSponge bathProgress={bathProgress} />
+            {isCleaning && route.name === "Bathroom" ? (
+              <BathSponge position={spongePosition} />
             ) : null}
           </View>
         </View>
@@ -509,18 +603,68 @@ function SleepBubbles() {
   );
 }
 
-function BathSponge({ bathProgress }: { bathProgress: Animated.Value }) {
-  const translateX = bathProgress.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [18, 116, 54, 128, 38]
-  });
-  const translateY = bathProgress.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [158, 138, 210, 248, 188]
-  });
-  const rotate = bathProgress.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: ["-16deg", "13deg", "-10deg", "17deg", "-8deg"]
+function DirtLayer({
+  visibleDirtIds
+}: {
+  visibleDirtIds: DirtSpotId[];
+}) {
+  if (visibleDirtIds.length === 0) return null;
+
+  return (
+    <View pointerEvents="box-none" style={styles.dirtLayer}>
+      {dirtSpots
+        .filter((spot) => visibleDirtIds.includes(spot.id))
+        .map((spot) => (
+          <View
+            key={spot.id}
+            style={[
+              styles.dirtSpot,
+              {
+                top: spot.top,
+                left: spot.left,
+                width: spot.width,
+                height: spot.height,
+                transform: [{ rotate: spot.rotate }]
+              }
+            ]}
+          >
+            <Image
+              resizeMode="cover"
+              source={overlayAssets.dirtSplats}
+              style={styles.dirtImage}
+            />
+          </View>
+        ))}
+    </View>
+  );
+}
+
+function BathSponge({ position }: { position: { x: number; y: number } }) {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 420,
+          useNativeDriver: true
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 420,
+          useNativeDriver: true
+        })
+      ])
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  const scale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.92, 1.08]
   });
 
   return (
@@ -529,7 +673,9 @@ function BathSponge({ bathProgress }: { bathProgress: Animated.Value }) {
       style={[
         styles.sponge,
         {
-          transform: [{ translateX }, { translateY }, { rotate }]
+          top: position.y,
+          left: position.x,
+          transform: [{ rotate: "-12deg" }, { scale }]
         }
       ]}
     >
@@ -732,9 +878,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "900"
   },
+  dirtLayer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: SPRITE_WIDTH,
+    height: SPRITE_HEIGHT,
+    zIndex: 4
+  },
+  dirtSpot: {
+    position: "absolute",
+    overflow: "hidden",
+    borderRadius: 999
+  },
+  dirtImage: {
+    width: "100%",
+    height: "100%",
+    opacity: 0.88
+  },
   sponge: {
     position: "absolute",
-    zIndex: 11,
+    zIndex: 12,
     width: 54,
     height: 54,
     alignItems: "center",

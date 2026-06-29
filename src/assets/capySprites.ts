@@ -119,3 +119,12 @@ export const shopAssets = {
 export const statusIcons = {
   sleep: require("../../assets/images/icons/sleep-icon.png"),
 } as const;
+
+// -----------------------------------------------------------------------------
+// Overlays — efeitos aplicados por cima da Capy
+// -----------------------------------------------------------------------------
+
+/** Manchas de sujeira usadas na limpeza manual */
+export const overlayAssets = {
+  dirtSplats: require("../../assets/images/overlays/dirt-splats.png"),
+} as const;
