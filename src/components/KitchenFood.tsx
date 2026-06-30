@@ -8,9 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-
-import { foodAssets } from "../assets/capySprites";
+import { foodAssets, navArrows } from "../assets/capySprites";
 
 const FOOD_SIZE = 90;
 const EAT_RADIUS = 65;
@@ -23,12 +21,15 @@ type Props = {
 
 export function KitchenFood({ mouthCenterX, mouthCenterY, onEat }: Props) {
   const [foodIndex, setFoodIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
   const pan = useRef(new Animated.ValueXY()).current;
   const mouthXRef = useRef(mouthCenterX);
   const mouthYRef = useRef(mouthCenterY);
+  const onEatRef = useRef(onEat);
 
   useEffect(() => { mouthXRef.current = mouthCenterX; }, [mouthCenterX]);
   useEffect(() => { mouthYRef.current = mouthCenterY; }, [mouthCenterY]);
+  useEffect(() => { onEatRef.current = onEat; }, [onEat]);
 
   const food = foodAssets[foodIndex];
 
@@ -47,9 +48,13 @@ export function KitchenFood({ mouthCenterX, mouthCenterY, onEat }: Props) {
         pan.flattenOffset();
         const dist = Math.hypot(gs.moveX - mouthXRef.current, gs.moveY - mouthYRef.current);
         if (dist < EAT_RADIUS) {
-          onEat();
+          onEatRef.current();
+          setVisible(false);
+          pan.setValue({ x: 0, y: 0 });
+          setTimeout(() => setVisible(true), 1400);
+        } else {
+          Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
         }
-        Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
       },
     })
   ).current;
@@ -65,19 +70,19 @@ export function KitchenFood({ mouthCenterX, mouthCenterY, onEat }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.carousel}>
-        <Pressable onPress={prev} style={styles.arrow}>
-          <MaterialCommunityIcons name="chevron-left" size={36} color="#FFFFFF" />
+        <Pressable onPress={prev} style={styles.arrow} disabled={!visible}>
+          <Image source={navArrows.previous} style={styles.arrowImage} resizeMode="contain" />
         </Pressable>
 
         <Animated.View
-          style={[styles.foodWrapper, { transform: pan.getTranslateTransform() }]}
-          {...panResponder.panHandlers}
+          style={[styles.foodWrapper, { transform: pan.getTranslateTransform(), opacity: visible ? 1 : 0 }]}
+          {...(visible ? panResponder.panHandlers : {})}
         >
           <Image source={food.image} style={styles.foodImage} resizeMode="contain" />
         </Animated.View>
 
-        <Pressable onPress={next} style={styles.arrow}>
-          <MaterialCommunityIcons name="chevron-right" size={36} color="#FFFFFF" />
+        <Pressable onPress={next} style={styles.arrow} disabled={!visible}>
+          <Image source={navArrows.next} style={styles.arrowImage} resizeMode="contain" />
         </Pressable>
       </View>
 
@@ -98,7 +103,11 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   arrow: {
-    padding: 2,
+    padding: 4,
+  },
+  arrowImage: {
+    width: 44,
+    height: 44,
   },
   foodWrapper: {
     width: FOOD_SIZE,
@@ -111,7 +120,7 @@ const styles = StyleSheet.create({
     height: FOOD_SIZE,
   },
   foodName: {
-    marginTop: -6,
+    marginTop: -16,
     fontSize: 14,
     fontWeight: "900",
     color: "#FFFFFF",
@@ -119,7 +128,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 1,
     textShadowColor: "#000000",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 12,
   },
 });

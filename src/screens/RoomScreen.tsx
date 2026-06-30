@@ -151,6 +151,25 @@ const roomConfigs: Record<RoomName, RoomConfig> = {
   }
 };
 
+const ROOM_HELP: Record<RoomName, { title: string; body: string }> = {
+  Kitchen:  {
+    title: "Como alimentar a Capy?",
+    body:  "Pressione e arraste o alimento até a boca da Capy para ela comer!\n\nUse as setas < > para trocar o alimento.",
+  },
+  Garden:   {
+    title: "Como brincar com a Capy?",
+    body:  "Arraste a bola e solte para jogá-la!\n\nQuanto mais rápido você arrastar, mais longe a bola vai.",
+  },
+  Bedroom:  {
+    title: "Como a Capy dorme?",
+    body:  "Toque no abajur para apagar a luz e a Capy vai dormir.\n\nToque novamente para acordá-la.",
+  },
+  Bathroom: {
+    title: "Como dar banho na Capy?",
+    body:  "Arraste a esponja sobre as manchas de sujeira no corpo da Capy para limpá-las.\n\nQuando todas as manchas sumirem ela ficará limpinha!",
+  },
+};
+
 const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
   Kitchen:  {
     left:   { iconName: "fridge",              label: "Geladeira", image: fridgeAsset },
@@ -164,7 +183,7 @@ const roomBarConfigs: Record<RoomName, RoomBottomBarConfig> = {
   },
   Garden:   {
     left:   { iconName: "controller-classic", label: "Mini-jogos", image: joystickAsset },
-    center: { iconName: "controller-classic", label: "Brincar",    hasArrows: false, image: ballAssets.red },
+    center: { iconName: "controller-classic", label: "",           hasArrows: false },
     right:  { label: "Loja" }
   },
   Bedroom:  {
@@ -205,7 +224,7 @@ export function RoomScreen({ navigation, route }: Props) {
   const [mouthCenter, setMouthCenter] = useState({ x: 0, y: 0 });
   const [eatingPhase, setEatingPhase] = useState<"idle" | "eating" | "happy">("idle");
   const eatingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [showFoodHelp, setShowFoodHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const config = roomConfigs[route.name];
   const barConfig = roomBarConfigs[route.name];
   const face = ROOM_FACE[route.name];
@@ -461,7 +480,8 @@ export function RoomScreen({ navigation, route }: Props) {
     }
 
     void playSoundEffect("eat");
-    const updated = applyCareAction(status, "feed");
+    const updated = applyCareAction(statusRef.current, "feed");
+    statusRef.current = updated;
     setStatus(updated);
     saveGameStatus(updated);
     setEatingPhase("eating");
@@ -511,14 +531,13 @@ export function RoomScreen({ navigation, route }: Props) {
     }
 
     const now = Date.now();
-    if (now - lastPlayRef.current < 3000) return;
+    if (now - lastPlayRef.current < 1000) return;
     lastPlayRef.current = now;
 
     const updated = applyCareAction(statusRef.current, "play");
     statusRef.current = updated;
     setStatus(updated);
     saveGameStatus(updated);
-    setMessage("A Capy adorou brincar com a bola!");
   }
 
   function handleCareAction() {
@@ -608,39 +627,28 @@ export function RoomScreen({ navigation, route }: Props) {
         </View>
 
         {/* Paginação de cômodos */}
-        <View>
+        <View style={{ overflow: "visible" }}>
           <PageNav
             currentPage={pageIndex}
             onPrev={prevPage ? handlePrev : undefined}
             onNext={nextPage ? handleNext : undefined}
           />
-          {route.name === "Kitchen" ? (
-            <Pressable onPress={() => setShowFoodHelp(true)} style={styles.helpNavBtn}>
-              <MaterialCommunityIcons name="help-circle-outline" size={44} color="#FFFFFF" />
-            </Pressable>
-          ) : null}
+          <Pressable onPress={() => setShowHelp(true)} style={styles.helpNavBtn}>
+            <MaterialCommunityIcons name="help-circle-outline" size={44} color="#FFFFFF" style={styles.helpIcon} />
+          </Pressable>
         </View>
 
-        {route.name === "Kitchen" ? (
-          <>
-            <Modal visible={showFoodHelp} transparent animationType="fade">
-              <View style={styles.helpOverlay}>
-                <View style={styles.helpCard}>
-                  <Text style={styles.helpCardTitle}>Como alimentar a Capy?</Text>
-                  <Text style={styles.helpCardText}>
-                    Pressione e arraste o alimento até a{"\n"}
-                    <Text style={styles.helpCardBold}>boca da Capy</Text> para ela comer!
-                    {"\n\n"}
-                    Use as setas {"<"} {">"} para trocar o alimento.
-                  </Text>
-                  <Pressable onPress={() => setShowFoodHelp(false)} style={styles.helpCardBtn}>
-                    <Text style={styles.helpCardBtnText}>Entendi!</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </Modal>
-          </>
-        ) : null}
+        <Modal visible={showHelp} transparent animationType="fade">
+          <View style={styles.helpOverlay}>
+            <View style={styles.helpCard}>
+              <Text style={styles.helpCardTitle}>{ROOM_HELP[route.name].title}</Text>
+              <Text style={styles.helpCardText}>{ROOM_HELP[route.name].body}</Text>
+              <Pressable onPress={() => setShowHelp(false)} style={styles.helpCardBtn}>
+                <Text style={styles.helpCardBtnText}>Entendi!</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
 
         {/* Capy composta por camadas */}
         <View style={styles.spriteArea}>
@@ -701,7 +709,7 @@ export function RoomScreen({ navigation, route }: Props) {
             accessibilityLabel={barConfig.left.label}
             accessibilityRole="button"
             onPress={route.name === "Garden" ? () => navigation.navigate("MiniGames") : undefined}
-            style={({ pressed }) => [styles.barSlot, pressed && route.name === "Garden" && styles.pressed]}
+            style={({ pressed }) => [styles.barSlot, pressed && route.name === "Garden" && styles.pressed, route.name === "Kitchen" && { marginRight: 40 }]}
           >
             {barConfig.left.image ? (
               <View style={styles.centerActionIcon}>
@@ -716,7 +724,7 @@ export function RoomScreen({ navigation, route }: Props) {
           </Pressable>
 
           {route.name === "Kitchen" ? (
-            <View style={[styles.barSlot, styles.barSlotCenter, { marginTop: -5 }]}>
+            <View style={[styles.barSlot, styles.barSlotCenter, { marginTop: -5, marginRight: 30 }]}>
               <KitchenFood
                 mouthCenterX={mouthCenter.x}
                 mouthCenterY={mouthCenter.y}
@@ -756,21 +764,23 @@ export function RoomScreen({ navigation, route }: Props) {
                   resizeMode="contain"
                 />
               </View>
-            ) : (
+            ) : route.name === "Garden" ? null : (
               <MaterialCommunityIcons color="#5D351C" name={barConfig.center.iconName} size={44} />
             )}
-            {barConfig.center.image || route.name === "Bedroom" ? null : <Text style={styles.barLabel}>{barConfig.center.label}</Text>}
+            {barConfig.center.image || route.name === "Bedroom" || route.name === "Garden" ? null : <Text style={styles.barLabel}>{barConfig.center.label}</Text>}
           </Pressable>
           )}
 
-          <Pressable
-            accessibilityLabel="Loja"
-            accessibilityRole="button"
-            onPress={() => navigation.navigate("Shop")}
-            style={({ pressed }) => [styles.barSlot, pressed && styles.pressed]}
-          >
-            <Image source={shopAssets.shop} style={styles.shopIcon} resizeMode="contain" />
-          </Pressable>
+          {route.name !== "Kitchen" && (
+            <Pressable
+              accessibilityLabel="Loja"
+              accessibilityRole="button"
+              onPress={() => navigation.navigate("Shop")}
+              style={({ pressed }) => [styles.barSlot, pressed && styles.pressed]}
+            >
+              <Image source={shopAssets.shop} style={styles.shopIcon} resizeMode="contain" />
+            </Pressable>
+          )}
         </View>
 
       </SafeAreaView>
@@ -1020,17 +1030,20 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 1,
     textShadowColor: "#000000",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 12
   },
   helpNavBtn: {
     position: "absolute",
-    right: 10,
-    top: 0,
-    bottom: 20,
-    justifyContent: "center",
+    right: 0,
+    top: -4,
     padding: 4,
     zIndex: 20,
+  },
+  helpIcon: {
+    textShadowColor: "#000000",
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 12,
   },
   helpNavIcon: {
     width: 34,
@@ -1127,7 +1140,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingTop: 8,
     paddingBottom: 14,
-    backgroundColor: "transparent"
+    backgroundColor: "transparent",
+    marginBottom: 10
   },
   barSlot: {
     flex: 1,

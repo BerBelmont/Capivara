@@ -179,6 +179,12 @@ export const audioAssets = {
   coinReward: require("../../assets/audio/coin_reward.wav"),
 } as const;
 
+/** Botões de navegação em PNG */
+export const navArrows = {
+  previous: require("../../assets/images/view/previous.png"),
+  next:     require("../../assets/images/view/next.png"),
+} as const;
+
 /** Acessórios compráveis (chapéus, etc.) */
 export const hatAssets = {
   boina: require("../../assets/images/hats/boinas/hat-boina.png"),

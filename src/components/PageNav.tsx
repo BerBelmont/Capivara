@@ -9,10 +9,10 @@ export type PageInfo = {
 };
 
 export const ROOM_PAGES: PageInfo[] = [
-  { label: "Alimentar", room: "Kitchen"  },
-  { label: "Brincar",   room: "Garden"   },
-  { label: "Dormir",    room: "Bedroom"  },
-  { label: "Banho",     room: "Bathroom" },
+  { label: "Cozinha",   room: "Kitchen"  },
+  { label: "Sala",      room: "Garden"   },
+  { label: "Quarto",    room: "Bedroom"  },
+  { label: "Banheiro",  room: "Bathroom" },
 ];
 
 type Props = {
@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 1,
     textTransform: "uppercase",
-    textShadowColor: "rgba(0, 0, 0, 0.9)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8
+    textShadowColor: "#000000",
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 12
   }
 });

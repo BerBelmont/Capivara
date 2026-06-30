@@ -2,14 +2,14 @@ import { useRef } from "react";
 import { Animated, Dimensions, Image, PanResponder, StyleSheet, View } from "react-native";
 import { ballAssets } from "../assets/capySprites";
 
-const BALL_SIZE = 80;
+const BALL_SIZE = 55;
 const FRICTION = 0.96;
 const BOUNCE_DAMPING = 0.65;
 const MIN_SPEED = 0.3;
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const GAME_TOP = 150;
-const GAME_BOTTOM = SCREEN_H - 200;
+const GAME_BOTTOM = SCREEN_H - 160;
 
 type Props = {
   onPlay: () => void;
@@ -17,7 +17,7 @@ type Props = {
 
 export function GardenBall({ onPlay }: Props) {
   const startX = SCREEN_W / 2 - BALL_SIZE / 2;
-  const startY = GAME_TOP + 40;
+  const startY = GAME_BOTTOM - BALL_SIZE + 120;
 
   const posRef  = useRef({ x: startX, y: startY });
   const velRef  = useRef({ x: 0, y: 0 });
@@ -26,6 +26,7 @@ export function GardenBall({ onPlay }: Props) {
 
   const prevTouch = useRef({ x: 0, y: 0, t: 0 });
   const lastTouch = useRef({ x: 0, y: 0, t: 0 });
+  const lastHappinessRef = useRef(0);
 
   const pos       = useRef(new Animated.ValueXY({ x: startX, y: startY })).current;
   const rotAnim   = useRef(new Animated.Value(0)).current;
@@ -74,7 +75,15 @@ export function GardenBall({ onPlay }: Props) {
       velRef.current = { x: dvx, y: dvy };
       pos.setValue({ x, y });
 
-      if (Math.abs(dvx) < MIN_SPEED && Math.abs(dvy) < MIN_SPEED) stopFlying();
+      if (Math.abs(dvx) < MIN_SPEED && Math.abs(dvy) < MIN_SPEED) {
+        stopFlying();
+      } else {
+        const now = Date.now();
+        if (now - lastHappinessRef.current > 1000) {
+          lastHappinessRef.current = now;
+          onPlay();
+        }
+      }
     }, 16);
   }
 
