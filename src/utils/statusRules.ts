@@ -11,10 +11,12 @@ export const initialStatus: CapybaraStatus = {
   equippedAccessory: null
 };
 
+const FOOD_HUNGER_GAIN = 25;
+
 const actionChanges: Record<CareAction, Partial<CapybaraStatus>> = {
-  feed:  { hunger: 25, hygiene: -20, happiness: 5 },
-  bath:  { hygiene: 40, energy: -15, happiness: 5 },
-  sleep: { energy: 40, hunger: -20, hygiene: -10 },
+  feed:  { hunger: FOOD_HUNGER_GAIN, hygiene: -20, happiness: 5 },
+  bath:  {},
+  sleep: {},
   play:  { happiness: 30, energy: -20, hygiene: -15, hunger: -10 }
 };
 
@@ -46,11 +48,7 @@ export function applyCareAction(
 }
 
 export function applyLampToggle(status: CapybaraStatus): CapybaraStatus {
-  if (status.lightOn) {
-    const sleeping = applyCareAction(status, "sleep");
-    return { ...sleeping, lightOn: false };
-  }
-  return { ...status, lightOn: true };
+  return { ...status, lightOn: !status.lightOn };
 }
 
 export function addCoinsBonus(

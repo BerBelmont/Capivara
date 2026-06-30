@@ -31,7 +31,6 @@ export type RootStackParamList = {
   CatchFoodGame: undefined;
   MemoryGame: undefined;
   Shop: undefined;
-  Profile: undefined;
   Kitchen: undefined;
   Bathroom: undefined;
   Garden: undefined;

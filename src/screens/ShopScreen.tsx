@@ -6,6 +6,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { GameBottomNav } from "../components/GameBottomNav";
+import { playAmbient } from "../audio/gameAudio";
 import { accessoryItems } from "../data/accessories";
 import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
 import { AccessoryId, CapybaraStatus, RootStackParamList } from "../types/game";
@@ -21,6 +22,7 @@ export function ShopScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      void playAmbient("leisure");
       loadGameStatus().then(setStatus);
     }, [])
   );
@@ -61,7 +63,7 @@ export function ShopScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.phoneFrame}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
           <View style={styles.notch} />
 
           <View style={styles.headerRow}>
@@ -81,9 +83,6 @@ export function ShopScreen({ navigation }: Props) {
             <View style={styles.coinPill}>
               <Image source={coinAssets.coin} style={styles.coinIcon} resizeMode="contain" />
               <Text style={styles.coinText}>{status.coins}</Text>
-              <View style={styles.plusCircle}>
-                <MaterialCommunityIcons color="#FFFFFF" name="plus" size={18} />
-              </View>
             </View>
           </View>
 
@@ -161,15 +160,15 @@ export function ShopScreen({ navigation }: Props) {
               );
             })}
           </View>
-
+        </ScrollView>
+        <View style={styles.bottomNavWrap}>
           <GameBottomNav
             active="shop"
             onGames={() => navigation.navigate("MiniGames")}
             onHome={() => navigation.navigate("Kitchen")}
-            onProfile={() => navigation.navigate("Profile")}
             onShop={() => navigation.navigate("Shop")}
           />
-        </ScrollView>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -189,10 +188,19 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#161616"
   },
+  scroll: {
+    flex: 1
+  },
   container: {
     padding: 12,
     paddingTop: 20,
-    paddingBottom: 14
+    paddingBottom: 12
+  },
+  bottomNavWrap: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    paddingTop: 8,
+    backgroundColor: "#F7E2B8"
   },
   notch: {
     position: "absolute",
@@ -261,22 +269,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#A96325",
     paddingLeft: 6,
-    paddingRight: 5
+    paddingRight: 10
   },
   coinText: {
     color: "#4E2D17",
     fontSize: 16,
     fontWeight: "900",
-    marginLeft: 3,
-    marginRight: 4
-  },
-  plusCircle: {
-    width: 26,
-    height: 26,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 13,
-    backgroundColor: "#67AF31"
+    marginLeft: 3
   },
   tabs: {
     flexDirection: "row",

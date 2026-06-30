@@ -1,35 +1,33 @@
 import { BottomNav } from "./BottomNav";
 
-type MainTab = "home" | "care" | "games" | "shop" | "profile";
+type MainTab = "home" | "care" | "games" | "shop";
 
 type GameBottomNavProps = {
   active: MainTab;
   onHome: () => void;
   onGames: () => void;
   onShop: () => void;
-  onProfile: () => void;
 };
 
 export function GameBottomNav({
   active,
   onHome,
   onGames,
-  onShop,
-  onProfile
+  onShop
 }: GameBottomNavProps) {
   return (
     <BottomNav
       items={[
         {
-          icon: "🏠",
+          icon: "home",
           iconName: "home-variant",
           iconColor: "#5EA333",
-          label: "Início",
+          label: "Inicio",
           active: active === "home",
           onPress: onHome
         },
         {
-          icon: "❤️",
+          icon: "care",
           iconName: "heart",
           iconColor: "#E34B5C",
           label: "Cuidados",
@@ -37,7 +35,7 @@ export function GameBottomNav({
           onPress: onHome
         },
         {
-          icon: "🎮",
+          icon: "games",
           iconName: "gamepad-variant",
           iconColor: "#6B4ABC",
           label: "Jogos",
@@ -45,20 +43,12 @@ export function GameBottomNav({
           onPress: onGames
         },
         {
-          icon: "🏪",
+          icon: "shop",
           iconName: "storefront",
           iconColor: "#DB6450",
           label: "Loja",
           active: active === "shop",
           onPress: onShop
-        },
-        {
-          icon: "🐹",
-          iconName: "face-man-profile",
-          iconColor: "#C98036",
-          label: "Perfil",
-          active: active === "profile",
-          onPress: onProfile
         }
       ]}
     />

@@ -1,9 +1,12 @@
+import { useCallback } from "react";
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { ActionButton } from "../components/ActionButton";
 import { GameBottomNav } from "../components/GameBottomNav";
+import { playAmbient } from "../audio/gameAudio";
 import { RootStackParamList } from "../types/game";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MiniGames">;
@@ -47,10 +50,16 @@ const games: Array<{
 ];
 
 export function MiniGamesScreen({ navigation }: Props) {
+  useFocusEffect(
+    useCallback(() => {
+      void playAmbient("leisure");
+    }, [])
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.phoneFrame}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
           <View style={styles.notch} />
 
           <View style={styles.headerRow}>
@@ -100,15 +109,15 @@ export function MiniGamesScreen({ navigation }: Props) {
           </View>
 
           <ActionButton label="Voltar" onPress={() => navigation.goBack()} variant="soft" />
-
+        </ScrollView>
+        <View style={styles.bottomNavWrap}>
           <GameBottomNav
             active="games"
             onGames={() => navigation.navigate("MiniGames")}
             onHome={() => navigation.navigate("Kitchen")}
-            onProfile={() => navigation.navigate("Profile")}
             onShop={() => navigation.navigate("Shop")}
           />
-        </ScrollView>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -128,11 +137,20 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#161616"
   },
+  scroll: {
+    flex: 1
+  },
   container: {
     flexGrow: 1,
     padding: 12,
     paddingTop: 20,
-    paddingBottom: 14
+    paddingBottom: 12
+  },
+  bottomNavWrap: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    paddingTop: 8,
+    backgroundColor: "#F7E2B8"
   },
   notch: {
     position: "absolute",

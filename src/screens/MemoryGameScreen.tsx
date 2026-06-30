@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Image,
   ImageSourcePropType,
@@ -9,8 +9,10 @@ import {
   View
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { ActionButton } from "../components/ActionButton";
+import { playAmbient, playSoundEffect } from "../audio/gameAudio";
 import {
   araucariaAssets,
   ballAssets,
@@ -117,6 +119,12 @@ export function MemoryGameScreen({ navigation }: Props) {
   const cardSize = level.pairCount <= 3 ? 102 : level.pairCount <= 5 ? 82 : 72;
   const levelCoinsReward = getLevelCoinsReward(levelIndex);
 
+  useFocusEffect(
+    useCallback(() => {
+      void playAmbient("minigame");
+    }, [])
+  );
+
   function isCardVisible(cardId: number) {
     return selectedIds.includes(cardId) || matchedIds.includes(cardId);
   }
@@ -144,6 +152,7 @@ export function MemoryGameScreen({ navigation }: Props) {
         setSelectedIds([]);
 
         if (nextMatchedIds.length === cards.length) {
+          void playSoundEffect("coin");
           setPendingCoins((current) => current + levelCoinsReward);
           setFeedback(
             isLastLevel

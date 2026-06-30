@@ -13,9 +13,11 @@ import {
   View
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { ActionButton } from "../components/ActionButton";
+import { playAmbient, playSoundEffect } from "../audio/gameAudio";
 import { loadGameStatus, saveGameStatus } from "../storage/gameStorage";
 import { RootStackParamList } from "../types/game";
 import { addCoinsBonus, addHappinessBonus } from "../utils/statusRules";
@@ -113,6 +115,12 @@ export function CatchFoodGameScreen({ navigation }: Props) {
   const rewardedRoundsRef = useRef<Set<number>>(new Set());
   const collectedRef = useRef(0); // mirror of collectedCount for use inside rAF/callbacks
   const roundRef = useRef(1);
+
+  useFocusEffect(
+    useCallback(() => {
+      void playAmbient("minigame");
+    }, [])
+  );
 
   // ─── Pan Responder ───────────────────────────────────────────────────────────
   // Key fix: track absolute basket position between gestures with lastBasketX
@@ -302,6 +310,7 @@ export function CatchFoodGameScreen({ navigation }: Props) {
 
   // ─── Collect Cone ────────────────────────────────────────────────────────────
   const collectCone = useCallback((currentCount: number) => {
+    void playSoundEffect("coin");
     setCollectAnimPos({ x: coneXRef.current, y: coneYRef.current });
     setShowCollectAnim(true);
     collectAnimProgress.setValue(0);
@@ -340,6 +349,7 @@ export function CatchFoodGameScreen({ navigation }: Props) {
       collisionListenerRef.current = null;
     }
     setGameComplete(true);
+    void playSoundEffect("coin");
 
     if (!rewardedRoundsRef.current.has(completedRound)) {
       rewardedRoundsRef.current.add(completedRound);

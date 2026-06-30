@@ -20,6 +20,7 @@ import { GardenBall } from "../components/GardenBall";
 import { KitchenFood } from "../components/KitchenFood";
 import { PageNav, ROOM_PAGES } from "../components/PageNav";
 import { TopBar } from "../components/TopBar";
+import { playAmbient, playSoundEffect } from "../audio/gameAudio";
 import { ballAssets, capyBody, capyEyes, capyMouth, closetAssets, fridgeAsset, helpIcon, joystickAsset, lampAssets, overlayAssets, roomBackgrounds, shopAssets, soapAssets, uiAssets } from "../assets/capySprites";
 import { loadGameStatus, saveGameStatus, saveLastRoom } from "../storage/gameStorage";
 import {
@@ -85,6 +86,7 @@ const BATH_HYGIENE_GAIN = 35;
 const LOW_STATUS_THRESHOLD = 30;
 const SPONGE_SIZE = 54;
 const SPONGE_TOUCH_RADIUS = 34;
+const SLEEP_ENERGY_GAIN_PER_SECOND = 20;
 
 const actionCosts: Record<CareAction, ActionCost[]> = {
   feed:  [{ key: "hygiene", label: "higiene" }],
@@ -249,6 +251,10 @@ export function RoomScreen({ navigation, route }: Props) {
   }, [route.name]);
 
   useEffect(() => {
+    void playAmbient(route.name === "Bedroom" && !status.lightOn ? "sleep" : "leisure");
+  }, [route.name, status.lightOn]);
+
+  useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(blinkAnim, { toValue: 0.2, duration: 500, useNativeDriver: true }),
@@ -300,6 +306,35 @@ export function RoomScreen({ navigation, route }: Props) {
     return `Nao da para usar agora: ${blockedCost.label} esta zerada.`;
   }
 
+  function getFullStatusActionMessage(action: CareAction) {
+    if (action === "feed" && status.hunger >= 100) return "A fome ja esta cheia.";
+    if (action === "bath" && status.hygiene >= 100) return "A higiene ja esta cheia.";
+    if (action === "sleep" && status.energy >= 100) return "A energia ja esta cheia.";
+    if (action === "play" && status.happiness >= 100) return "A alegria ja esta cheia.";
+    return null;
+  }
+
+  useEffect(() => {
+    if (status.lightOn) return undefined;
+
+    const sleepTimer = setInterval(() => {
+      setStatus((current) => {
+        if (current.lightOn || current.energy >= 100) return current;
+
+        const nextStatus: CapybaraStatus = {
+          ...current,
+          energy: keepStatusValueInRange(current.energy + SLEEP_ENERGY_GAIN_PER_SECOND)
+        };
+
+        statusRef.current = nextStatus;
+        void saveGameStatus(nextStatus);
+        return nextStatus;
+      });
+    }, 1000);
+
+    return () => clearInterval(sleepTimer);
+  }, [status.lightOn]);
+
   function handleBathAction() {
     const blockedMessage = getBlockedActionMessage("bath");
     if (blockedMessage) {
@@ -307,12 +342,16 @@ export function RoomScreen({ navigation, route }: Props) {
       return;
     }
 
-    if (status.hygiene > LOW_STATUS_THRESHOLD && visibleDirtIds.length === 0) {
-      const updatedStatus = applyCareAction(status, "bath");
-      setStatus(updatedStatus);
-      setMessage(actionMessages.bath);
+    const fullStatusMessage = getFullStatusActionMessage("bath");
+    if (fullStatusMessage) {
+      setMessage(fullStatusMessage);
       setShowSleepAnimation(false);
-      saveGameStatus(updatedStatus);
+      return;
+    }
+
+    if (status.hygiene > LOW_STATUS_THRESHOLD) {
+      setMessage("A Capy ainda esta limpa. Use a bucha somente quando ela estiver suja.");
+      setShowSleepAnimation(false);
       return;
     }
 
@@ -414,6 +453,14 @@ export function RoomScreen({ navigation, route }: Props) {
 
   function handleEat() {
     if (eatingTimerRef.current) clearTimeout(eatingTimerRef.current);
+    const fullStatusMessage = getFullStatusActionMessage("feed");
+    if (fullStatusMessage) {
+      setMessage(fullStatusMessage);
+      setEatingPhase("idle");
+      return;
+    }
+
+    void playSoundEffect("eat");
     const updated = applyCareAction(status, "feed");
     setStatus(updated);
     saveGameStatus(updated);
@@ -428,22 +475,45 @@ export function RoomScreen({ navigation, route }: Props) {
   }
 
   function handleLampToggle() {
+    if (status.lightOn) {
+      const fullStatusMessage = getFullStatusActionMessage("sleep");
+      if (fullStatusMessage) {
+        setMessage(fullStatusMessage);
+        setShowSleepAnimation(false);
+        return;
+      }
+    }
+
     const updated = applyLampToggle(status);
     setStatus(updated);
     setMessage(updated.lightOn ? "Bom dia! A Capy acordou!" : "Boa noite! A Capy foi dormir!");
+    void playAmbient(updated.lightOn ? "leisure" : "sleep");
     saveGameStatus(updated);
   }
 
   const lastPlayRef = useRef(0);
   function handlePlay() {
+    if (!status.lightOn) {
+      setMessage("A Capy esta dormindo! Va ao quarto e acenda a luz para acorda-la.");
+      return;
+    }
+
+    const blockedMessage = getBlockedActionMessage("play");
+    if (blockedMessage) {
+      setMessage(blockedMessage);
+      return;
+    }
+
+    const fullStatusMessage = getFullStatusActionMessage("play");
+    if (fullStatusMessage) {
+      setMessage(fullStatusMessage);
+      return;
+    }
+
     const now = Date.now();
     if (now - lastPlayRef.current < 3000) return;
     lastPlayRef.current = now;
 
-    if (!status.lightOn) {
-      setMessage("A Capy está dormindo! Vá ao quarto e acenda a luz para acordá-la. 🌙");
-      return;
-    }
     const updated = applyCareAction(statusRef.current, "play");
     statusRef.current = updated;
     setStatus(updated);
@@ -477,6 +547,13 @@ export function RoomScreen({ navigation, route }: Props) {
       return;
     }
 
+    const fullStatusMessage = getFullStatusActionMessage(action);
+    if (fullStatusMessage) {
+      setMessage(fullStatusMessage);
+      setShowSleepAnimation(false);
+      return;
+    }
+
     const updatedStatus = applyCareAction(status, action);
     setStatus(updatedStatus);
     setMessage(actionMessages[action]);
@@ -504,7 +581,7 @@ export function RoomScreen({ navigation, route }: Props) {
 <SafeAreaView style={styles.safeArea}>
 
         {/* Barra superior: moedas à esquerda, perfil à direita */}
-        <TopBar coins={status.coins} onProfile={() => navigation.navigate("Profile")} />
+        <TopBar coins={status.coins} />
 
         {/* Barras de status flutuantes */}
         <View style={styles.statusBarsRow}>

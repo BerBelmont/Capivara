@@ -170,6 +170,15 @@ export const uiAssets = {
   iconSupport: require("../../assets/images/icon-support.png"),
 } as const;
 
+/** Musicas e efeitos sonoros do jogo */
+export const audioAssets = {
+  leisureAmbient: require("../../assets/audio/leisure_ambient.wav"),
+  sleepAmbient: require("../../assets/audio/sleep_ambient.wav"),
+  minigameAmbient: require("../../assets/audio/minigame_ambient.wav"),
+  eatBite: require("../../assets/audio/eat_bite.wav"),
+  coinReward: require("../../assets/audio/coin_reward.wav"),
+} as const;
+
 /** Acessórios compráveis (chapéus, etc.) */
 export const hatAssets = {
   boina: require("../../assets/images/hats/boinas/hat-boina.png"),

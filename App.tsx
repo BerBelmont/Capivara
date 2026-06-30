@@ -7,7 +7,6 @@ import { Platform, StyleSheet, View } from "react-native";
 import { CatchFoodGameScreen } from "./src/screens/CatchFoodGameScreen";
 import { MemoryGameScreen } from "./src/screens/MemoryGameScreen";
 import { MiniGamesScreen } from "./src/screens/MiniGamesScreen";
-import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { RoomScreen } from "./src/screens/RoomScreen";
 import { ShopScreen } from "./src/screens/ShopScreen";
 import { loadLastRoom } from "./src/storage/gameStorage";
@@ -42,7 +41,6 @@ export default function App() {
         <Stack.Screen name="CatchFoodGame" component={CatchFoodGameScreen} />
         <Stack.Screen name="MemoryGame" component={MemoryGameScreen} />
         <Stack.Screen name="Shop" component={ShopScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Kitchen" component={RoomScreen} />
         <Stack.Screen name="Bathroom" component={RoomScreen} />
         <Stack.Screen name="Garden" component={RoomScreen} />
